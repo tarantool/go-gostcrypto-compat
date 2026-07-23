@@ -1,94 +1,114 @@
-name: bump-go-gostcrypto
+name: Bump go-gostcrypto
 
-# Weekly check for a new go-gostcrypto release. When one is out, bump the pinned
-# version in go.mod/go.sum, run the full parity suite against the NEW release,
-# and open (or update) a PR. The parity result is surfaced in the PR body so a
-# red bump — a new go-gostcrypto that diverges from the gogost reference — is
-# visible rather than silent.
-#
-# The parity run here resolves go-gostcrypto@<new> from the public proxy (no
-# sibling checkout, no go.work): it validates compat against the actual release,
-# which is exactly what the pinned dependency will be.
+# Daily check for a new go-gostcrypto release. When one is out, bump the pinned
+# version in go.mod/go.sum, validate it with the full clean-room vs gogost parity
+# suite against the new release, and open (or update) a PR. Parity is a hard gate:
+# if the new release diverges from the gogost reference the job fails and no PR is
+# opened. The parity run resolves go-gostcrypto@<new> from the public proxy (no
+# sibling checkout) — it validates compat against the actual release.
 
 on:
   schedule:
-    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+    - cron: "0 3 * * *"
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Check and validate only — do not commit, push, or open a PR."
+        type: boolean
+        default: false
 
 permissions:
   contents: write
   pull-requests: write
 
+concurrency:
+  group: bump-go-gostcrypto
+  cancel-in-progress: false
+
+env:
+  GO_VERSION: 1.24
+  BOT_NAME: "github-actions[bot]"
+  BOT_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
+  PR_BRANCH: automation/bump-go-gostcrypto
+
 jobs:
   bump:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
+      - name: setup Go
+        uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
+          go-version: ${{ env.GO_VERSION }}
 
       # Compare the version pinned in go.mod against the latest published tag.
-      # `sort -V | tail -1` guards against a downgrade if @latest ever resolves
-      # to something older than the pin.
-      - name: resolve latest vs pinned go-gostcrypto
-        id: v
+      # sort -V | tail -1 guards against a downgrade if @latest resolves older.
+      - name: resolve latest go-gostcrypto
+        id: resolve
         run: |
           set -euo pipefail
           current=$(go list -m -f '{{.Version}}' github.com/tarantool/go-gostcrypto)
           latest=$(go list -m -f '{{.Version}}' github.com/tarantool/go-gostcrypto@latest)
-          echo "current=$current" >> "$GITHUB_OUTPUT"
-          echo "latest=$latest"   >> "$GITHUB_OUTPUT"
+          echo "current=${current}" >> "$GITHUB_OUTPUT"
+          echo "latest=${latest}" >> "$GITHUB_OUTPUT"
           if [ "$latest" != "$current" ] && \
              [ "$(printf '%s\n%s\n' "$current" "$latest" | sort -V | tail -1)" = "$latest" ]; then
+            echo "::notice::go-gostcrypto ${current} -> ${latest}"
             echo "bump=true" >> "$GITHUB_OUTPUT"
-            echo "go-gostcrypto: $current -> $latest"
           else
+            echo "::notice::go-gostcrypto up to date at ${current}"
             echo "bump=false" >> "$GITHUB_OUTPUT"
-            echo "go-gostcrypto: up to date at $current"
           fi
 
-      - name: bump go.mod / go.sum
-        if: steps.v.outputs.bump == 'true'
+      - name: bump go.mod and go.sum
+        if: steps.resolve.outputs.bump == 'true'
         run: |
           set -euo pipefail
-          go get github.com/tarantool/go-gostcrypto@${{ steps.v.outputs.latest }}
+          go get github.com/tarantool/go-gostcrypto@${{ steps.resolve.outputs.latest }}
           go mod tidy
 
-      # Full clean-room vs gogost parity suite against the new release. Allowed to
-      # fail: its outcome is reported in the PR body instead of blocking the PR,
-      # so maintainers always get a visible bump to review.
-      - name: parity suite against the new release
-        id: parity
-        if: steps.v.outputs.bump == 'true'
-        continue-on-error: true
-        run: go test ./...
+      - name: check for changes
+        id: changes
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain go.mod go.sum)" ]; then
+            echo "no version change"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
 
-      # peter-evans/create-pull-request commits the working-tree changes
-      # (go.mod/go.sum) and opens or updates the PR idempotently. Uses github.token
-      # by default; set a BUMP_PAT secret (PAT or App token) if you want the bump
-      # PR to trigger the normal CI checks (PRs opened by github.token do not).
-      # Pin to a commit SHA instead of @v7 if you want to lock the action version.
-      - name: open or update the bump PR
-        if: steps.v.outputs.bump == 'true'
-        uses: peter-evans/create-pull-request@v7
+      - name: validate parity against the new release
+        if: steps.changes.outputs.changed == 'true'
+        run: go test ./... -count=1
+
+      - name: create pull request
+        if: steps.changes.outputs.changed == 'true' && inputs.dry_run != true
+        uses: peter-evans/create-pull-request@v8
         with:
-          token: ${{ secrets.BUMP_PAT || github.token }}
-          branch: automation/bump-go-gostcrypto
-          delete-branch: true
+          token: ${{ github.token }}
+          branch: ${{ env.PR_BRANCH }}
           base: master
-          commit-message: "build: bump go-gostcrypto to ${{ steps.v.outputs.latest }}"
-          title: "build: bump go-gostcrypto to ${{ steps.v.outputs.latest }}"
+          add-paths: |
+            go.mod
+            go.sum
+          commit-message: |
+            build: bump go-gostcrypto to ${{ steps.resolve.outputs.latest }}
+
+            Automated bump of github.com/tarantool/go-gostcrypto.
+
+            ${{ steps.resolve.outputs.current }} -> ${{ steps.resolve.outputs.latest }}.
+          committer: "${{ env.BOT_NAME }} <${{ env.BOT_EMAIL }}>"
+          author: "${{ env.BOT_NAME }} <${{ env.BOT_EMAIL }}>"
+          title: "build: bump go-gostcrypto to ${{ steps.resolve.outputs.latest }}"
           body: |
             Automated bump of `github.com/tarantool/go-gostcrypto`.
 
-            - **From:** `${{ steps.v.outputs.current }}`
-            - **To:** `${{ steps.v.outputs.latest }}`
-            - Release: https://github.com/tarantool/go-gostcrypto/releases/tag/${{ steps.v.outputs.latest }}
+            `${{ steps.resolve.outputs.current }}` → `${{ steps.resolve.outputs.latest }}`.
 
-            Parity suite against the new release (`go test ./...`, clean-room vs
-            gogost byte-for-byte): **`${{ steps.parity.outcome }}`**.
-
-            > If parity is `failure`, the new go-gostcrypto release diverges from
-            > the gogost reference — investigate before merging.
+            Validated by the clean-room vs gogost parity suite against the new
+            release. Release notes:
+            https://github.com/tarantool/go-gostcrypto/releases/tag/${{ steps.resolve.outputs.latest }}
+          delete-branch: true
