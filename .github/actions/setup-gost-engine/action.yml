@@ -1,0 +1,50 @@
+name: setup-gost-engine
+description: >-
+  Clone, build, and install the GOST reference engine (gost-engine) into
+  OpenSSL's ENGINESDIR, then verify the `openssl enc -engine gost` CLI path that
+  the live differential tests (e.g. parity/gost28147cnt's TestDiff_GostEngineCLI)
+  shell out to. The verify step fails if the engine cipher is unavailable, so a
+  broken engine build surfaces as a red job instead of letting those tests
+  silently self-skip.
+
+  Lives in go-gostcrypto-compat (alongside the test that needs the engine) but is
+  consumed by local path from both this repo's CI and go-gostcrypto's parity
+  workflow, since both lay go-gostcrypto-compat out as a sibling checkout:
+    - uses: ./go-gostcrypto-compat/.github/actions/setup-gost-engine
+
+inputs:
+  ref:
+    description: "gost-engine git ref (tag/branch/sha) to build. v3.0.3 is the vector source pinned in docs/engine-vectors.md."
+    required: false
+    default: v3.0.3
+
+runs:
+  using: composite
+  steps:
+    - name: install build deps
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          cmake build-essential libssl-dev pkg-config
+
+    - name: clone + build + install gost-engine
+      shell: bash
+      run: |
+        git clone --branch "${{ inputs.ref }}" --depth 1 --recurse-submodules \
+          https://github.com/gost-engine/engine.git gost-engine
+        cmake -S gost-engine -B gost-engine/build -DCMAKE_BUILD_TYPE=Release
+        cmake --build gost-engine/build --config Release -j"$(nproc)"
+        # Installs gost.so into OpenSSL's ENGINESDIR so `-engine gost` resolves it.
+        sudo cmake --install gost-engine/build
+
+    - name: verify the engine loads and the CLI path used by the tests works
+      shell: bash
+      run: |
+        openssl version
+        openssl engine -t gost
+        # Exercise the exact CLI the live differential invokes; fail the job
+        # (rather than let the test silently skip) if the engine cipher is gone.
+        printf 'gost-engine-smoke' | openssl enc -engine gost -gost89-cnt \
+          -K 0000000000000000000000000000000000000000000000000000000000000000 \
+          -iv 0000000000000000 -nopad | od -An -tx1 | head -1

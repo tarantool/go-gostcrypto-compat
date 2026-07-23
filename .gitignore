@@ -1,0 +1,12 @@
+# Go build output
+/bin/
+*.test
+*.out
+coverage.txt
+coverage.out
+
+# Local AI-assistant guidance, not part of the published module.
+/CLAUDE.md
+
+# Reference clone of gost-engine (vectors source of truth, not part of build).
+tmp/

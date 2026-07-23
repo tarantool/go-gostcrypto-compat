@@ -1,0 +1,69 @@
+Preferable way is to [Download] tarball with the signature from
+website and, for example, run tests with benchmarks:
+
+    $ v=7.0
+    $ fetch http://www.gogost.stargrave.org/gogost-$v.tar.zst
+    $ fetch http://www.gogost.stargrave.org/gogost-$v.tar.zst.sig
+    [Integrity] verify
+    $ tar xf gogost-$v.tar.zst
+    $ cd gogost-$v
+    $ go build -o streebog256 ./cmd/streebog256
+    $ echo hello world | ./streebog256
+    f72018189a5cfb803dbe1f2149cf554c40093d8e7f81c21e08ac5bcd09d9934d
+
+And then you can include its source code in your project for example
+like this:
+
+    $ mkdir -p myproj/vendor/go.stargrave.org/gogost
+    $ mv gogost-$v myproj/vendor/go.stargrave.org/gogost/v7
+    $ cd myproj
+    $ cat >main.go <<EOF
+    package main
+
+    import (
+        "encoding/hex"
+        "fmt"
+
+        "go.stargrave.org/gogost/v7/gost34112012256"
+    )
+
+    func main() {
+        h := gost34112012256.New()
+        h.Write([]byte("hello world\n"))
+        fmt.Println(hex.EncodeToString(h.Sum(nil)))
+    }
+    EOF
+    $ go run main.go
+    f72018189a5cfb803dbe1f2149cf554c40093d8e7f81c21e08ac5bcd09d9934d
+
+GoGOST is also "go get"-able. For example to install streebog256 utility:
+
+    $ go install go.stargrave.org/gogost/v7/cmd/streebog256@latest
+
+Aware that go.stargrave.org uses
+=> //www.ca.stargrave.org ca.stargrave.org
+X.509 certificate authority.
+
+Go's default proxy.golang.org and sum.golang.org
+services won't be able to verify go.stargrave.org's TLS
+authenticity, because there are no common trust anchors.
+You can skip their usage by setting $GOPRIVATE=go.stargrave.org.
+
+You can (temporarily) override CA bundle during installation with
+$SSL_CERT_FILE environment variable.
+
+You can unpack tarball somewhere and use "replace" command in go.mod:
+
+    require go.stargrave.org/gogost/v7 v$v
+    replace go.stargrave.org/gogost/v7 => /path/to/gogost-$v
+
+You can use Go's workspace feature:
+
+    $ go work use /path/to/gogost-$v
+
+You can obtain development source code with
+    git clone git://git.stargrave.org/gogost.git
+You can also use
+    anongit@master.git.stargrave.org:stargrave.org/gogost.git
+    anongit@slave.git.stargrave.org:stargrave.org/gogost.git
+    git://y.git.stargrave.org/gogost.git

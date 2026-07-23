@@ -1,0 +1,11 @@
+You *have to* verify downloaded tarballs authenticity to be sure
+that you retrieved trusted and untampered software.
+
+    $ ssh-keygen -Y verify -f PUBKEY-SSH.pub -I gogost@stargrave.org -n file \
+        -s gogost-$v.tar.zst.sig <gogost-$v.tar.zst
+
+There is
+=> https://www.openssh.com/ OpenSSH .sig signature
+=> PUBKEY-SSH.pub its public key
+=> PUBKEY-SSH.pub.asc its LibrePGP signature
+Its fingerprint: SHA256:u8X9rPDOhxpyzGs/IugbxXbDeOu/0AttKY+LGAvHBH0

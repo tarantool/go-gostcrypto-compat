@@ -1,0 +1,124 @@
+#!/bin/sh -ex
+
+PATH=$HOME/work/meta4ra/contrib:$PATH
+cur=$(pwd)
+tmp=$(mktemp -d)
+release=$1
+[ -n "$release" ]
+
+git clone . $tmp/gogost-$release
+cd $tmp/gogost-$release
+git checkout v$release
+
+./version >VERSION
+mv doc/FAQ doc/INSTALL doc/NEWS doc/THANKS .
+rm -r .git doc makedist version
+
+find . -type d -exec chmod 755 {} +
+find . -type f -exec chmod 644 {} +
+chmod +x bench
+
+cd ..
+detpax gogost-"$release" >gogost-$release.tar
+zstd -22 --ultra -v gogost-$release.tar
+tarball=gogost-$release.tar.zst
+ssh-keygen -Y sign -f ~/.ssh/sign/gogost@stargrave.org -n file $tarball
+meta4ra-create -fn $tarball -mtime $tarball -sig-ssh $tarball.sig \
+    "1|ru|http://www.gogost.stargrave.org/$tarball" \
+    "2|ru|http://msk.www.gogost.stargrave.org/$tarball" \
+    "2|ru|http://spb.www.gogost.stargrave.org/$tarball" \
+    "3|ru|https://www.gogost.stargrave.org/$tarball" \
+    "4|ru|https://msk.www.gogost.stargrave.org/$tarball" \
+    "4|ru|https://spb.www.gogost.stargrave.org/$tarball" \
+    "5|ru|http://y.www.gogost.stargrave.org/$tarball" \
+    "5|ru|http://[322:3bd:cc26:9545:b00b:721f:6b97:1a3e]/$tarball" \
+    "6|ru|sftp://anonwww@msk.www.stargrave.org/gogost.stargrave.org/$tarball" \
+    "6|ru|sftp://anonwww@spb.www.stargrave.org/gogost.stargrave.org/$tarball" \
+    <$tarball >$tarball.meta4
+meta4ra-create -add $tarball.meta4 -fn $tarball.sig -hashers "" \
+    "1|ru|http://www.gogost.stargrave.org/$tarball.sig" \
+    "2|ru|http://msk.www.gogost.stargrave.org/$tarball.sig" \
+    "2|ru|http://spb.www.gogost.stargrave.org/$tarball.sig" \
+    "3|ru|https://www.gogost.stargrave.org/$tarball.sig" \
+    "4|ru|https://msk.www.gogost.stargrave.org/$tarball.sig" \
+    "4|ru|https://spb.www.gogost.stargrave.org/$tarball.sig" \
+    "5|ru|http://y.www.gogost.stargrave.org/$tarball.sig" \
+    "5|ru|http://[322:3bd:cc26:9545:b00b:721f:6b97:1a3e]/$tarball.sig" \
+    "6|ru|sftp://anonwww@msk.www.stargrave.org/gogost.stargrave.org/$tarball.sig" \
+    "6|ru|sftp://anonwww@spb.www.stargrave.org/gogost.stargrave.org/$tarball.sig" \
+    <$tarball.sig >$tarball.meta4_
+mv $tarball.meta4_ $tarball.meta4
+
+size=$(( $(stat -f %z $tarball) / 1024 ))
+release_date=$(date "+%Y-%m-%d")
+
+cat <<EOF
+An entry for documentation:
+Release [NEWS]#$release | $release_date | $size KiB
+    => gogost-$release.tar.zst tar
+    => gogost-$release.tar.zst.meta4 meta4
+EOF
+
+mv $tmp/$tarball $tmp/$tarball.sig $tmp/$tarball.meta4 $cur/doc/gogost.html/
+
+cat <<EOF
+Subject: [EN] GoGOST $release release announcement
+
+I am pleased to announce GoGOST $release release availability!
+
+GoGOST is free software pure Go GOST cryptographic functions library.
+GOST is GOvernment STandard of Russian Federation (and Soviet Union).
+
+------------------------ >8 ------------------------
+
+The main improvements for that release are:
+
+
+------------------------ >8 ------------------------
+
+GoGOST'es home page is: http://www.gogost.stargrave.org/
+
+URLs to source code, its checksums and signatures can be found in an
+attached Metalink4 file.
+
+OpenSSH key: SHA256:u8X9rPDOhxpyzGs/IugbxXbDeOu/0AttKY+LGAvHBH0
+
+Please send questions regarding the use of GoGOST, bug reports and patches
+to mailing list: http://lists.stargrave.org/gost.html
+EOF
+echo mutt -s \"[EN] GoGOST $release release announcement\" \
+    gost@lists.stargrave.org \
+    -a $cur/doc/gogost.html/$tarball.meta4
+
+cat <<EOF
+Subject: [RU] Состоялся релиз GoGOST $release
+
+Я рад сообщить о выходе релиза GoGOST $release!
+
+GoGOST это свободное программное обеспечение реализующее
+криптографические функции ГОСТ на чистом Go. ГОСТ -- ГОсударственный
+СТандарт Российской Федерации (а также Советского Союза).
+
+------------------------ >8 ------------------------
+
+Основные усовершенствования в этом релизе:
+
+
+------------------------ >8 ------------------------
+
+Домашняя страница GoGOST: http://www.gogost.stargrave.org/
+
+Ссылки на исходный код, его контрольные суммы и подписи могут быть
+найдены в приложенном Metalink4 файле.
+
+OpenSSH ключ: SHA256:u8X9rPDOhxpyzGs/IugbxXbDeOu/0AttKY+LGAvHBH0
+
+Пожалуйста, все вопросы касающиеся использования GoGOST, отчёты об
+ошибках и патчи отправляйте в gost почтовую рассылку:
+http://lists.stargrave.org/gost.html
+EOF
+echo mutt -s \"[RU] Состоялся релиз GoGOST $release\" \
+    gost@lists.stargrave.org \
+    -a $cur/doc/gogost.html/$tarball.meta4
+
+rm -fr $tmp

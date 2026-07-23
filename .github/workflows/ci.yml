@@ -1,0 +1,57 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # go-gostcrypto is wired in by `replace ../go-gostcrypto`, so it must be
+      # checked out as a sibling directory next to this module.
+      - uses: actions/checkout@v4
+        with:
+          path: go-gostcrypto-compat
+      - uses: actions/checkout@v4
+        with:
+          repository: tarantool/go-gostcrypto
+          path: go-gostcrypto
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: build
+        working-directory: go-gostcrypto-compat
+        run: go build ./...
+
+      # Parity (./parity/...) and the live gost-engine differential are disabled
+      # here: they build against the tarantool/go-gostcrypto default branch, so
+      # they go red whenever a go-gostcrypto API change lands on a branch before
+      # it merges to master. Those suites are gated by go-gostcrypto's own
+      # `parity` workflow, which tests each PR against the matching go-gostcrypto
+      # tree. This job keeps the facade KAT/vector tests (the module root package).
+      - name: test (facade KAT/vector)
+        working-directory: go-gostcrypto-compat
+        run: go test .
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: go-gostcrypto-compat
+      - uses: actions/checkout@v4
+        with:
+          repository: tarantool/go-gostcrypto
+          path: go-gostcrypto
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v2.1.6
+          working-directory: go-gostcrypto-compat

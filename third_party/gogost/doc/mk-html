@@ -1,0 +1,18 @@
+#!/bin/sh -e
+
+html=gogost.html
+rm -f $html/*.html
+SWG_DO_SRC=0 SWG_DO_BACKS=0 swg htmls $html
+perl -i -npe 's#^<title>.*$#<title>GoGOST</title>#' $html/index.html
+ln -f ../PUBKEY-* $html/
+(
+    cd $html
+    export ATOM_ID="34c4c603-9fa7-4441-a089-881d216d8638"
+    export NAME=GoGOST
+    export BASE_URL=http://www.gogost.stargrave.org
+    export AUTHOR_EMAIL=gogost@stargrave.org
+    ~/work/releases-feed/releases.atom.zsh
+)
+perl -i -npe 'print "<link rel=\"alternate\" title=\"Releases\" href=\"releases.atom\" type=\"application/atom+xml\">\n" if /^<\/head>/' $html/Download.html
+find $html -type d -exec chmod 755 {} +
+find $html -type f -exec chmod 644 {} +
