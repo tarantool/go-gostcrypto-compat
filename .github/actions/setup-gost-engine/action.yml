@@ -30,8 +30,13 @@ runs:
 
     - name: clone + build + install gost-engine
       shell: bash
+      # Through the environment, not ${{ }} in the script: the ref is
+      # substituted into the script text before bash parses it, and a tag
+      # name may hold shell syntax such as $(...).
+      env:
+        GOST_ENGINE_REF: ${{ inputs.ref }}
       run: |
-        git clone --branch "${{ inputs.ref }}" --depth 1 --recurse-submodules \
+        git clone --branch "$GOST_ENGINE_REF" --depth 1 --recurse-submodules \
           https://github.com/gost-engine/engine.git gost-engine
         # The libprov submodule of v3.0.3 asks for CMake 3.0, and CMake 4 (in
         # ubuntu-latest since 26.04) refuses anything below 3.5.
