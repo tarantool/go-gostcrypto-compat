@@ -1,4 +1,4 @@
-package gostcryptocompat
+package gostcryptocompat //nolint:testpackage // white-box: builds gogost keys on Curve.inner.
 
 // Tests for GenerateEphemeralKey.
 // All test vectors were produced with gopgost GenPrivateKey + PublicKey().Raw()

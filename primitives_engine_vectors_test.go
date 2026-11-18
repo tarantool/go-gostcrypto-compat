@@ -1,4 +1,4 @@
-package gostcryptocompat
+package gostcryptocompat_test
 
 // Cipher and MAC vectors ported from gost-engine v3.0.3.
 // Source commit: e0a500a (tag v3.0.3). Not committed; lives in tmp/engine/.
@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	gost "github.com/tarantool/go-gostcrypto-compat"
 	"go.stargrave.org/gogost/v7/gost28147"
 )
 
@@ -370,7 +371,7 @@ func TestGost_GOST28147_IMIT_Wrapper_KeyMeshing(t *testing.T) {
 	key := []byte("0123456789abcdef0123456789abcdef")
 	testbig := []byte(strings.Repeat(strings.Repeat("12345670", 8)+"\n", 4096))
 
-	got, err := GOST28147_IMIT(key, testbig)
+	got, err := gost.GOST28147_IMIT(key, testbig)
 	if err != nil {
 		t.Fatalf("GOST28147_IMIT: %v", err)
 	}
@@ -395,7 +396,7 @@ func TestGost_GOST28147_IMIT_Wrapper_NoMeshing(t *testing.T) {
 	key := []byte("0123456789abcdef0123456789abcdef")
 	testdata := []byte(strings.Repeat("12345670", 128))
 
-	got, err := GOST28147_IMIT(key, testdata)
+	got, err := gost.GOST28147_IMIT(key, testdata)
 	if err != nil {
 		t.Fatalf("GOST28147_IMIT: %v", err)
 	}

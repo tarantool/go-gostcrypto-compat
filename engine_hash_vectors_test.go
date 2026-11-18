@@ -1,4 +1,4 @@
-package gostcryptocompat
+package gostcryptocompat_test
 
 // Test vectors ported from gost-engine v3.0.3
 // https://github.com/gost-engine/engine @ tag v3.0.3
@@ -16,6 +16,7 @@ import (
 	"strings"
 	"testing"
 
+	gost "github.com/tarantool/go-gostcrypto-compat"
 	"go.stargrave.org/gogost/v7/gost28147"
 	"go.stargrave.org/gogost/v7/gost34112012512"
 	"go.stargrave.org/gogost/v7/gost341194"
@@ -129,7 +130,7 @@ func TestGost_Streebog256_EngineVectors(t *testing.T) {
 				input = []byte(tc.inputStr)
 			}
 
-			got := Streebog256(input)
+			got := gost.Streebog256(input)
 
 			want, err := hex.DecodeString(tc.expect)
 			if err != nil {
@@ -249,7 +250,7 @@ func TestGost_Streebog512_EngineVectors(t *testing.T) {
 				input = []byte(tc.inputStr)
 			}
 
-			got := Streebog512(input)
+			got := gost.Streebog512(input)
 
 			want, err := hex.DecodeString(tc.expect)
 			if err != nil {
@@ -353,7 +354,7 @@ func TestGost_GOSTR341194_EngineVectors(t *testing.T) {
 				input = []byte(tc.inputStr)
 			}
 
-			got := GOSTR341194(input)
+			got := gost.GOSTR341194(input)
 
 			want, err := hex.DecodeString(tc.expect)
 			if err != nil {

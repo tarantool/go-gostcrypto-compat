@@ -1,4 +1,4 @@
-package gostcryptocompat
+package gostcryptocompat_test
 
 // Sign/verify and VKO vectors from gost-engine v3.0.3 test/04-pkey.t.
 // Source commit: e0a500a (tag v3.0.3). Not committed; lives in tmp/engine/.
@@ -16,6 +16,7 @@ import (
 	"encoding/hex"
 	"testing"
 
+	gost "github.com/tarantool/go-gostcrypto-compat"
 	"go.stargrave.org/gogost/v7/gost3410"
 )
 
@@ -155,7 +156,7 @@ func TestGost_R342001_Verify_RFC7091(t *testing.T) {
 
 	// Sign with our R341012Sign wrapper (uses same TestParamSet curve) and
 	// verify the round-trip. Randomised signing — only correctness matters.
-	ourSig, err := R341012Sign(prvRaw, digest)
+	ourSig, err := gost.R341012Sign(prvRaw, digest)
 	if err != nil {
 		t.Fatalf("R341012Sign: %v", err)
 	}
