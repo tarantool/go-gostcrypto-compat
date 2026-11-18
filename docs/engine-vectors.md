@@ -2,6 +2,40 @@
 
 Source: `tmp/engine/` (tag v3.0.3, commit e0a500a). Not committed to this repo.
 
+## Engine versions in CI
+
+`.github/gost-engine.json` names gost-engine tags in two roles:
+
+- `vectors` is the tag the vectors in this file were ported from. They are
+  constants in the test files, so a new engine release does not change them.
+  The entry moves only in the commit that re-ports them (see below).
+- `latest` is the newest gost-engine release.
+
+`.github/workflows/parity-engine.yml` builds the engine at each of these
+tags (once, if both name the same tag) and runs `go test ./...` with it. Only
+the tests that run the live engine depend on its version: today that is
+`parity/gost28147cnt`'s `TestDiff_GostEngineCLI`, which runs `openssl enc
+-engine gost` and skips when the engine is missing. The ported vectors give
+the same result with any engine, or with none.
+
+The workflow is called by go-gostcrypto's `parity` workflow for every
+go-gostcrypto change, and by `engine.yml` here when a change touches the
+setup-gost-engine action, the versions file or these workflows.
+
+### Moving the vector source
+
+1. Clone the new tag into `tmp/engine/`, which git ignores:
+   `git clone --branch vX.Y.Z --recurse-submodules https://github.com/gost-engine/engine.git tmp/engine`.
+   A full clone also brings the old tag for the diff below.
+2. Diff the engine tests against the old tag, e.g.
+   `git -C tmp/engine diff v3.0.3 vX.Y.Z -- test tcl_tests`, port what changed
+   into the test files listed below, and regenerate the vectors that were
+   produced by running the engine (KEG-03, KWP-01/02).
+3. Update this file: the title, the `Source:` line and the version numbers in
+   the sections below.
+4. In the same commit, set `vectors` in `.github/gost-engine.json` to the new
+   tag.
+
 ## test/01-digest.t + tcl_tests/dgst.try
 
 Ported: 7 Streebog-256, 7 Streebog-512, 5 GOST R 34.11-94 vectors.

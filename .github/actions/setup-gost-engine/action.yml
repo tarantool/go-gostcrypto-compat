@@ -7,16 +7,21 @@ description: >-
   broken engine build surfaces as a red job instead of letting those tests
   silently self-skip.
 
-  Lives in go-gostcrypto-compat (alongside the test that needs the engine) but is
-  consumed by local path from both this repo's CI and go-gostcrypto's parity
-  workflow, since both lay go-gostcrypto-compat out as a sibling checkout:
-    - uses: ./go-gostcrypto-compat/.github/actions/setup-gost-engine
+  Lives in go-gostcrypto-compat, next to the test that needs the engine. Its
+  caller is the reusable .github/workflows/parity-engine.yml, which
+  go-gostcrypto's parity workflow and this repo's engine workflow call. It
+  checks go-gostcrypto-compat out at the requested ref as ./gostcrypto-compat
+  and takes the action from there by local path:
+    - uses: ./gostcrypto-compat/.github/actions/setup-gost-engine
 
 inputs:
   ref:
-    description: "gost-engine git ref (tag/branch/sha) to build. v3.0.3 is the vector source pinned in docs/engine-vectors.md."
-    required: false
-    default: v3.0.3
+    description: >-
+      gost-engine tag or branch to build (git clone --branch takes no sha).
+      The callers pass the versions named in .github/gost-engine.json: the
+      vector source of docs/engine-vectors.md and the latest release. No
+      default, so that file stays the only place naming a version.
+    required: true
 
 runs:
   using: composite
@@ -39,7 +44,8 @@ runs:
         git clone --branch "$GOST_ENGINE_REF" --depth 1 --recurse-submodules \
           https://github.com/gost-engine/engine.git gost-engine
         # The libprov submodule of v3.0.3 asks for CMake 3.0, and CMake 4 (in
-        # ubuntu-latest since 26.04) refuses anything below 3.5.
+        # ubuntu-latest since 26.04) refuses anything below 3.5. Later
+        # releases ask for more, and the flag does not affect them.
         cmake -S gost-engine -B gost-engine/build -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_POLICY_VERSION_MINIMUM=3.5
         cmake --build gost-engine/build --config Release -j"$(nproc)"
