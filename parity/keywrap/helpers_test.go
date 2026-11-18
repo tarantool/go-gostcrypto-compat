@@ -24,7 +24,8 @@ const (
 	// TC26-Z leg: full 44-byte wrap and its three sub-fields, all captured
 	// from the gost-engine 3.0.3 keyWrapCryptoPro dylib (independent oracle,
 	// see keywrap-cryptopro.md:332). katWrapped == katUKM ‖ katCEKENC ‖ katCEKMAC.
-	katKEKUKM  = "c8ffc6b8d22ea16fdecbed3c770eb2406537e24300dd10349f57f4c647016c18" // KEK(UKM) for TC26-Z (engine keyDiversifyCryptoPro).
+	// katKEKUKM is KEK(UKM) for TC26-Z (engine keyDiversifyCryptoPro).
+	katKEKUKM  = "c8ffc6b8d22ea16fdecbed3c770eb2406537e24300dd10349f57f4c647016c18"
 	katCEKENC  = "940e6d83505f7725919a76bbc6d5d991315eb9dfc6d77fb8788cb0cef8b925c1"
 	katCEKMAC  = "e77d8bc3"
 	katWrapped = "0102030405060708940e6d83505f7725919a76bbc6d5d991315eb9dfc6d77fb8788cb0cef8b925c1e77d8bc3"

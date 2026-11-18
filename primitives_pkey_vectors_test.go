@@ -33,7 +33,10 @@ import (
 func TestGost_R342001_EngineVectors(t *testing.T) {
 	t.Parallel()
 
-	t.Skip("tmp/engine/test/04-pkey.t:45 — engine pkey tests use PEM key-file loading and text-output matching; no raw sign/verify KAT extractable without running OpenSSL. RFC 7091 §A.1 vectors already covered in primitives_test.go TestGost_R341012_Verify. (src: test/04-pkey.t:45)")
+	t.Skip("tmp/engine/test/04-pkey.t:45 — engine pkey tests use PEM key-file loading and " +
+		"text-output matching; no raw sign/verify KAT extractable without running OpenSSL. " +
+		"RFC 7091 §A.1 vectors already covered in primitives_test.go TestGost_R341012_Verify. " +
+		"(src: test/04-pkey.t:45)")
 }
 
 // TestGost_R341012_EngineVectors_Sign512 notes that GOST R 34.10-2012 512-bit
@@ -44,7 +47,8 @@ func TestGost_R342001_EngineVectors(t *testing.T) {
 func TestGost_R341012_EngineVectors_Sign512(t *testing.T) {
 	t.Parallel()
 
-	t.Skip("tmp/engine/test/04-pkey.t:265 — R 34.10-2012-512 sign/verify out of scope; our wrapper only exposes 256-bit sign (R341012Sign/Verify). (src: test/04-pkey.t:265)")
+	t.Skip("tmp/engine/test/04-pkey.t:265 — R 34.10-2012-512 sign/verify out of scope; " +
+		"our wrapper only exposes 256-bit sign (R341012Sign/Verify). (src: test/04-pkey.t:265)")
 }
 
 // TestGost_VKO2001_EngineVectors notes that the 04-pkey.t 'derive' subtest
@@ -60,7 +64,9 @@ func TestGost_R341012_EngineVectors_Sign512(t *testing.T) {
 func TestGost_VKO2001_EngineVectors(t *testing.T) {
 	t.Parallel()
 
-	t.Skip("tmp/engine/test/04-pkey.t:160 — VKO 'derive' subtest verifies via sha256(DER pubkey), not raw shared key bytes; PEM keys require DER parsing to extract LE raw privkey for our VKO2001 wrapper. No clean portable KAT available. (src: test/04-pkey.t:160)")
+	t.Skip("tmp/engine/test/04-pkey.t:160 — VKO 'derive' subtest verifies via sha256(DER pubkey), " +
+		"not raw shared key bytes; PEM keys require DER parsing to extract LE raw privkey for " +
+		"our VKO2001 wrapper. No clean portable KAT available. (src: test/04-pkey.t:160)")
 }
 
 // TestGost_VKO2001_TestParamSet_RFC verifies VKO GOST R 34.10-2001 using the
@@ -87,7 +93,9 @@ func TestGost_VKO2001_EngineVectors(t *testing.T) {
 func TestGost_VKO2001_TestParamSet_RFC(t *testing.T) {
 	t.Parallel()
 
-	t.Skip("tmp/engine/test/04-pkey.t:162 — expected value is sha256 of derived key, not raw derived key; cannot assert against VKO2001 output without running OpenSSL to compute the raw key first. (src: test/04-pkey.t:171)")
+	t.Skip("tmp/engine/test/04-pkey.t:162 — expected value is sha256 of derived key, not raw derived " +
+		"key; cannot assert against VKO2001 output without running OpenSSL to compute the raw " +
+		"key first. (src: test/04-pkey.t:171)")
 }
 
 // TestGost_R342001_Verify_RFC7091 provides a portable R 34.10-2001 sign+verify
@@ -121,7 +129,8 @@ func TestGost_R342001_Verify_RFC7091(t *testing.T) {
 	}
 
 	// Reference signature from RFC 7091 §A.1.
-	sigHex := "01456c64ba4642a1653c235a98a60249bcd6d3f746b631df928014f6c5bf9c4041aa28d2f1ab148280cd9ed56feda41974053554a42767b83ad043fd39dc0493"
+	sigHex := "01456c64ba4642a1653c235a98a60249bcd6d3f746b631df928014f6c5bf9c40" +
+		"41aa28d2f1ab148280cd9ed56feda41974053554a42767b83ad043fd39dc0493"
 
 	sig, err := hex.DecodeString(sigHex)
 	if err != nil {

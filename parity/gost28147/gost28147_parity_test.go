@@ -2,6 +2,7 @@ package gost28147parity
 
 import (
 	"bytes"
+	"slices"
 	"testing"
 
 	gost "github.com/tarantool/go-gostcrypto-compat"
@@ -16,11 +17,13 @@ import (
 func TestDiff_InternalGostOracle(t *testing.T) {
 	t.Parallel()
 
-	keys := [][]byte{
-		mustHex(t, "00112233445566778899aabbccddeeff102132435465768798a9bacbdcedf0e1"),
-	}
+	const derivedKeys = 64
 
-	for seed := range 64 {
+	keys := slices.Grow([][]byte{
+		mustHex(t, "00112233445566778899aabbccddeeff102132435465768798a9bacbdcedf0e1"),
+	}, derivedKeys)
+
+	for seed := range derivedKeys {
 		var k [KeySize]byte
 
 		x := uint64(seed)*0x9E3779B97F4A7C15 + 0xABCDEF
@@ -90,14 +93,16 @@ func TestDiff_InternalGostOracle(t *testing.T) {
 func TestDiff_TC26Z_ECB(t *testing.T) {
 	t.Parallel()
 
-	keys := [][]byte{
+	const derivedKeys = 64
+
+	keys := slices.Grow([][]byte{
 		// All-zeros key (first trivial KAT input).
 		mustHex(t, "0000000000000000000000000000000000000000000000000000000000000000"),
 		// Pinned KAT key from TestDiff_InternalGostOracle.
 		mustHex(t, "00112233445566778899aabbccddeeff102132435465768798a9bacbdcedf0e1"),
-	}
+	}, derivedKeys)
 
-	for seed := range 64 {
+	for seed := range derivedKeys {
 		var k [KeySize]byte
 
 		x := uint64(seed)*0x6C62272E07BB0142 + 0xFEDCBA98

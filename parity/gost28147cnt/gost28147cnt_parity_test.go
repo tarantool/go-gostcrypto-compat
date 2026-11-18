@@ -2,6 +2,7 @@ package gost28147cntparity
 
 import (
 	"bytes"
+	"context"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -136,14 +137,14 @@ func gostEngineConfCandidates() []string {
 // unavailable and the caller skips. The dedicated `parity-engine` job, which
 // builds gost-engine from source, still passes this probe and runs the full
 // differential.
-func isEngineAvailable() (string, bool) {
+func isEngineAvailable(ctx context.Context) (string, bool) {
 	bin, ok := opensslBin()
 	if !ok {
 		return "", false
 	}
 
 	// One block of zeros through the gost engine; success proves it loads.
-	cmd := exec.Command(bin, "enc", "-engine", "gost", "-gost89-cnt",
+	cmd := exec.CommandContext(ctx, bin, "enc", "-engine", "gost", "-gost89-cnt",
 		"-K", hexstr(make([]byte, gost28147.KeySize)),
 		"-iv", hexstr(make([]byte, gost28147.BlockSize)), "-nopad")
 
@@ -174,7 +175,7 @@ func mustEngineCNT(t *testing.T, bin string, key, iv []byte, n int, tc26 bool) [
 		mode = "-gost89-cnt-12"
 	}
 
-	cmd := exec.Command(bin, "enc", "-engine", "gost", mode,
+	cmd := exec.CommandContext(t.Context(), bin, "enc", "-engine", "gost", mode,
 		"-K", hexstr(key), "-iv", hexstr(iv), "-nopad")
 
 	cmd.Stdin = bytes.NewReader(make([]byte, n)) // n zero bytes.
@@ -217,7 +218,7 @@ func hexstr(b []byte) string {
 //nolint:paralleltest // the subtests draw their inputs in turn from one seeded rng.
 func TestDiff_GostEngineCLI(t *testing.T) {
 	// G89C-01: probe availability once; skip the whole test if the binary is absent.
-	bin, ok := isEngineAvailable()
+	bin, ok := isEngineAvailable(t.Context())
 	if !ok {
 		t.Skip("gost-engine CLI not available")
 	}

@@ -22,12 +22,12 @@ func fixLen(b []byte, n int) []byte {
 // tc26256AOID is GOST R 34.10-2012 256-bit TC26 ParamSet A.
 var tc26256AOID = asn1.ObjectIdentifier{1, 2, 643, 7, 1, 2, 1, 1, 1}
 
-func oracleCurve(t testing.TB) *gost.Curve {
-	t.Helper()
+func oracleCurve(tb testing.TB) *gost.Curve {
+	tb.Helper()
 
 	c, err := gost.CurveByOID(tc26256AOID)
 	if err != nil {
-		t.Fatalf("oracle CurveByOID: %v", err)
+		tb.Fatalf("oracle CurveByOID: %v", err)
 	}
 
 	return c

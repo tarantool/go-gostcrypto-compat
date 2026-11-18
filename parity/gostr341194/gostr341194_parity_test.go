@@ -14,6 +14,7 @@ package gostr341194parity
 import (
 	"bytes"
 	"math/rand"
+	"slices"
 	"testing"
 
 	. "github.com/tarantool/go-gostcrypto/gostr341194"
@@ -28,8 +29,11 @@ func TestDiffAgainstInternalGost(t *testing.T) {
 
 	// Deterministic spread of lengths around block boundaries plus random
 	// lengths, all strictly > 0 (empty is the documented D1 divergence).
-	lengths := []int{1, 2, 7, 8, 15, 16, 31, 32, 33, 63, 64, 65, 100, 255, 256, 257, 1023, 1024, 2100}
-	for range 200 {
+	const randomLengths = 200
+
+	lengths := slices.Grow([]int{1, 2, 7, 8, 15, 16, 31, 32, 33, 63, 64, 65, 100, 255, 256, 257, 1023, 1024, 2100},
+		randomLengths)
+	for range randomLengths {
 		lengths = append(lengths, 1+rng.Intn(4096))
 	}
 
@@ -103,7 +107,8 @@ func FuzzDiffAgainstInternalGost(f *testing.F) {
 
 		gotStream := h.Sum(nil)
 		if !bytes.Equal(gotStream, want) {
-			t.Fatalf("streaming len=%d (off1=%d off2=%d) mismatch:\n clean-room %x\n gostcryptocompat %x", n, off1, off2, gotStream, want)
+			t.Fatalf("streaming len=%d (off1=%d off2=%d) mismatch:\n clean-room %x\n gostcryptocompat %x",
+				n, off1, off2, gotStream, want)
 		}
 	})
 }
@@ -182,7 +187,8 @@ func TestDiffReset(t *testing.T) {
 		// Also verify it matches a freshly-constructed hash of msg2.
 		fresh := Sum(msg2)
 		if !bytes.Equal(gotAfterReset, fresh[:]) {
-			t.Fatalf("Reset result differs from fresh hash for len=%d:\n after-Reset %x\n fresh       %x", n2, gotAfterReset, fresh[:])
+			t.Fatalf("Reset result differs from fresh hash for len=%d:\n after-Reset %x\n fresh       %x",
+				n2, gotAfterReset, fresh[:])
 		}
 	}
 }
@@ -230,13 +236,15 @@ func TestSumNonDestructive(t *testing.T) {
 
 		// Final digests must match each other.
 		if !bytes.Equal(finalSum, ogFinal) {
-			t.Fatalf("post-mid-Sum final split=%d len=%d mismatch:\n clean-room %x\n oracle     %x", split, n, finalSum, ogFinal)
+			t.Fatalf("post-mid-Sum final split=%d len=%d mismatch:\n clean-room %x\n oracle     %x",
+				split, n, finalSum, ogFinal)
 		}
 
 		// Final digest must equal the one-shot oracle over the full message.
 		wantFull := gost.GOSTR341194(msg)
 		if !bytes.Equal(finalSum, wantFull) {
-			t.Fatalf("post-mid-Sum final split=%d len=%d differs from one-shot:\n got  %x\n want %x", split, n, finalSum, wantFull)
+			t.Fatalf("post-mid-Sum final split=%d len=%d differs from one-shot:\n got  %x\n want %x",
+				split, n, finalSum, wantFull)
 		}
 	}
 }
@@ -282,7 +290,8 @@ func TestSumAppendPrefix(t *testing.T) {
 		// The appended suffix must match the one-shot oracle digest.
 		wantDigest := gost.GOSTR341194(msg)
 		if !bytes.Equal(gotWithPrefix[len(prefix):], wantDigest) {
-			t.Fatalf("Sum(prefix) appended wrong digest len=%d:\n got  %x\n want %x", n, gotWithPrefix[len(prefix):], wantDigest)
+			t.Fatalf("Sum(prefix) appended wrong digest len=%d:\n got  %x\n want %x",
+				n, gotWithPrefix[len(prefix):], wantDigest)
 		}
 	}
 }

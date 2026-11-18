@@ -638,23 +638,24 @@ func FuzzCrossVerify(f *testing.F) {
 		// value mod q (most commonly: dig=[0x00] → e=1, bad=[0x01] → e=1). We
 		// compute the effective e for both and skip if they're equal, avoiding a
 		// false failure that is correct behaviour (same e → same sig → verifies).
-		if len(dig) > 0 {
-			bad := append([]byte(nil), dig...)
+		if len(dig) == 0 {
+			return
+		}
 
-			bad[0] ^= 0x01
+		bad := append([]byte(nil), dig...)
 
-			eDig := effectiveE256(dig)
+		bad[0] ^= 0x01
 
-			eBad := effectiveE256(bad)
-			if eDig.Cmp(eBad) != 0 {
-				if VerifyDigest(newCurve, refPub, bad, refSig) {
-					t.Fatalf("new accepted tampered digest (prv=%x dig=%x)", prv, dig)
-				}
+		if effectiveE256(dig).Cmp(effectiveE256(bad)) == 0 {
+			return
+		}
 
-				if ok, _ := gost.VerifyDigestOnCurve(refCurve, refPub, bad, refSig); ok {
-					t.Fatalf("ref accepted tampered digest (prv=%x dig=%x)", prv, dig)
-				}
-			}
+		if VerifyDigest(newCurve, refPub, bad, refSig) {
+			t.Fatalf("new accepted tampered digest (prv=%x dig=%x)", prv, dig)
+		}
+
+		if ok, _ := gost.VerifyDigestOnCurve(refCurve, refPub, bad, refSig); ok {
+			t.Fatalf("ref accepted tampered digest (prv=%x dig=%x)", prv, dig)
 		}
 	})
 }
