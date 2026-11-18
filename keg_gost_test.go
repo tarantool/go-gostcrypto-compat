@@ -36,6 +36,8 @@ import (
 // KEG(B_pub, A_priv, ukm) == KEG(A_pub, B_priv, ukm).
 // This mirrors the symmetric KEG test in tmp/engine/test_derive.c:338-364.
 func TestKEG2012_256_RoundTrip(t *testing.T) {
+	t.Parallel()
+
 	curve := &Curve{inner: gost3410.CurveIdtc26gost341012256paramSetA()}
 
 	// Generate key pair A and B from fixed seeds.
@@ -104,6 +106,8 @@ func TestKEG2012_256_RoundTrip(t *testing.T) {
 //	bc2b44f590b48adcea709a0485f7054462a7b3bc738d7cbbf972bd309d671900
 //	39eb73d0237a338ffa142d810f844206fcd36d6296df6f6f9149749b2db1e62b
 func TestKEG2012_256_EngineOracle(t *testing.T) {
+	t.Parallel()
+
 	curve := &Curve{inner: gost3410.CurveIdtc26gost341012256paramSetA()}
 
 	// Private key A raw (LE, 32 bytes, from PKCS#8 OCTET STRING).

@@ -49,6 +49,8 @@ import (
 // arbitrary-length messages, for both block sizes, requiring byte-exact
 // agreement.
 func TestDiffAgainstGost(t *testing.T) {
+	t.Parallel()
+
 	rng := rand.New(rand.NewSource(0x6f6d6163))
 
 	for iter := range 2048 {
@@ -111,6 +113,8 @@ func TestDiffAgainstGost(t *testing.T) {
 // (idempotency), and writing more data after Sum produces the same result as a
 // fresh instance over the full concatenated message (Write-after-Sum
 // continuation). Covers OMAC-03.
+//
+//nolint:paralleltest // the subtests draw their inputs in turn from one seeded rng.
 func TestDiffSumNonDestructive(t *testing.T) {
 	rng := rand.New(rand.NewSource(0x6f6d6163_dead))
 
@@ -318,6 +322,8 @@ func FuzzDiffAgainstGost(f *testing.F) {
 // TestDiffTruncatedKATs cross-checks the pinned standard KATs against the
 // oracle at the truncated tag widths used by the published vectors.
 func TestDiffTruncatedKATs(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name    string
 		newMine func(key []byte, tag int) *mynew.OMAC
@@ -352,6 +358,8 @@ func TestDiffTruncatedKATs(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			key := mustHex(t, tc.key)
 			msg := mustHex(t, tc.msg)
 			want := mustHex(t, tc.want)
@@ -389,6 +397,8 @@ func TestDiffTruncatedKATs(t *testing.T) {
 // block cipher; the block ciphers themselves are proven independently by
 // parity/kuznyechik and parity/magma.
 func TestDiffAgainstAEAD(t *testing.T) {
+	t.Parallel()
+
 	rng := rand.New(rand.NewSource(0x6f6d6163_aead))
 
 	for iter := range 2048 {
@@ -456,6 +466,8 @@ func TestDiffAgainstAEAD(t *testing.T) {
 // is known to ride on a correct external reference (not merely a self-consistent
 // one). Uses the A.1.6 (Kuznyechik, trunc-8) and A.2.6 (Magma, trunc-4) tags.
 func TestAEADAgainstKATs(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name      string
 		newCipher func(key []byte) cipher.Block
@@ -487,6 +499,8 @@ func TestAEADAgainstKATs(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			key := mustHex(t, tc.key)
 			msg := mustHex(t, tc.msg)
 			want := mustHex(t, tc.want)

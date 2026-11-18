@@ -29,6 +29,8 @@ import (
 // Source: tmp/engine/test/01-digest.t lines 101-108, 125-130, 145-163, 176-195, 207-225, 237-264
 // Source: tmp/engine/tcl_tests/dgst.try lines 31-53.
 func TestGost_Streebog256_EngineVectors(t *testing.T) {
+	t.Parallel()
+
 	// Vectors ported from gost-engine v3.0.3 test/01-digest.t
 	// (https://github.com/gost-engine/engine @ v3.0.3).
 	cases := []struct {
@@ -117,6 +119,8 @@ func TestGost_Streebog256_EngineVectors(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			var input []byte
 
 			if tc.inputHx != "" {
@@ -151,6 +155,8 @@ func TestGost_Streebog256_EngineVectors(t *testing.T) {
 // Source: tmp/engine/test/01-digest.t lines 112-118, 133-140, 165-171, 196-203, 228-234, 258-265
 // Source: tmp/engine/tcl_tests/dgst.try lines 55-77.
 func TestGost_Streebog512_EngineVectors(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name     string
 		inputHx  string
@@ -237,6 +243,8 @@ func TestGost_Streebog512_EngineVectors(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			var input []byte
 
 			if tc.inputHx != "" {
@@ -274,6 +282,8 @@ func TestGost_Streebog512_EngineVectors(t *testing.T) {
 // Source: tmp/engine/test/01-digest.t lines 145-155, 180-187, 209-217, 241-249
 // Source: tmp/engine/tcl_tests/dgst.try lines 79-89.
 func TestGost_GOSTR341194_EngineVectors(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name     string
 		inputHx  string
@@ -341,6 +351,8 @@ func TestGost_GOSTR341194_EngineVectors(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			var input []byte
 
 			if tc.inputHx != "" {
@@ -374,6 +386,8 @@ func TestGost_GOSTR341194_EngineVectors(t *testing.T) {
 //
 // Source: tmp/engine/tcl_tests/mac.try lines 16-18.
 func TestGost_HMACStreebog512_EngineVectors(t *testing.T) {
+	t.Parallel()
+
 	// dgst63.dat = "012345678901234567890123456789012345678901234567890123456789012" (63 bytes)
 	// HMAC key = "123456901234567890123456789012" (30 ASCII bytes)
 	// Expected HMAC-md_gost12_512 = 3767bcbe31de0965...
@@ -402,6 +416,8 @@ func TestGost_HMACStreebog512_EngineVectors(t *testing.T) {
 //
 // Source: tmp/engine/tcl_tests/mac.try lines 24-26.
 func TestGost_HMACGOSTR341194_EngineVectors(t *testing.T) {
+	t.Parallel()
+
 	// dgst.dat = "Test data to digest.\n" x 100 (2100 bytes)
 	// HMAC key = "123456901234567890123456789012" (30 ASCII bytes)
 	// Expected HMAC-md_gost94 = 25434aa4b59b9749d3716ac188762b6c92b47d552aeb556f74b9c357b2b7c8c6

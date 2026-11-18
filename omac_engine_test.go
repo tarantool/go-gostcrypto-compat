@@ -16,6 +16,8 @@ import (
 //	  -macopt hexkey:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 //	=> 96e6c1913fd788e3922e617fdd341edf
 func TestOMAC_Kuznyechik_EngineOracle(t *testing.T) {
+	t.Parallel()
+
 	key := make([]byte, 32)
 	for i := range key {
 		key[i] = 0xAA

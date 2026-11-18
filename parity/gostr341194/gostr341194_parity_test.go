@@ -22,6 +22,8 @@ import (
 )
 
 func TestDiffAgainstInternalGost(t *testing.T) {
+	t.Parallel()
+
 	rng := rand.New(rand.NewSource(0xC0FFEE))
 
 	// Deterministic spread of lengths around block boundaries plus random
@@ -109,6 +111,8 @@ func FuzzDiffAgainstInternalGost(f *testing.F) {
 // TestDiffStreaming feeds the same random messages through the streaming
 // hash.Hash interface in odd chunk sizes and diffs against the oracle.
 func TestDiffStreaming(t *testing.T) {
+	t.Parallel()
+
 	rng := rand.New(rand.NewSource(0x1234))
 	for range 100 {
 		n := 1 + rng.Intn(2048)
@@ -139,6 +143,8 @@ func TestDiffStreaming(t *testing.T) {
 // Guards against a partial-clear refactor of Reset leaving a stale field (e.g.
 // forgetting nbuf or sum in a future per-field clear).
 func TestDiffReset(t *testing.T) {
+	t.Parallel()
+
 	rng := rand.New(rand.NewSource(0x4E5E7))
 	oracle := gost.NewGOSTR341194CryptoProHash() // gogost-backed hash.Hash.
 
@@ -187,6 +193,8 @@ func TestDiffReset(t *testing.T) {
 // oracle are non-destructive; this test ensures they agree on both the
 // intermediate and final digests, catching any future regression on either side.
 func TestSumNonDestructive(t *testing.T) {
+	t.Parallel()
+
 	rng := rand.New(rand.NewSource(0xDEAD))
 
 	for range 50 {
@@ -239,6 +247,8 @@ func TestSumNonDestructive(t *testing.T) {
 // non-nil prefix path. This test diffs both sides with a fixed non-nil prefix
 // and asserts that the prefix bytes are preserved and the appended digests match.
 func TestSumAppendPrefix(t *testing.T) {
+	t.Parallel()
+
 	rng := rand.New(rand.NewSource(0xBEEF))
 	prefix := []byte{0xDE, 0xAD, 0xBE, 0xEF}
 

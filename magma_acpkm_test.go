@@ -39,6 +39,8 @@ func magmaACPKMMesh(key []byte) []byte {
 
 // TestMagmaACPKM_KeyMeshing_EngineEtalon ports the K2 etalon from tmp/engine/test_gost89.c.
 func TestMagmaACPKM_KeyMeshing_EngineEtalon(t *testing.T) {
+	t.Parallel()
+
 	initialKey := mustHexMagmaMesh(t,
 		"8899aabbccddeeff0011223344556677"+
 			"fedcba98765432100123456789abcdef")

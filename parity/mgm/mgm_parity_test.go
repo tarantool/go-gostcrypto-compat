@@ -99,8 +99,12 @@ func sealAndCheck(t *testing.T, v variant, tagSize int, key, nonce, plain, aad [
 }
 
 func TestMGM_Differential(t *testing.T) {
+	t.Parallel()
+
 	for _, v := range variants {
 		t.Run(v.name, func(t *testing.T) {
+			t.Parallel()
+
 			rng := rand.New(rand.NewSource(0x9058))
 
 			for range 500 {

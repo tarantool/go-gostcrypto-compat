@@ -13,6 +13,8 @@ import (
 // gostcryptocompat black-box oracle over random-length messages, for both 256
 // and 512 output sizes.
 func TestDiffAgainstGost(t *testing.T) {
+	t.Parallel()
+
 	rng := rand.New(rand.NewSource(0xC0FFEE))
 
 	// Include boundary lengths explicitly plus randomized ones.
@@ -163,6 +165,8 @@ func FuzzDiffAgainstGostMultiChunk(f *testing.F) {
 // TestDiffStreamingAgainstGost exercises chunked Write against the one-shot
 // oracle (clean-room streaming vs reference one-shot) for the 512-bit variant.
 func TestDiffStreamingAgainstGost(t *testing.T) {
+	t.Parallel()
+
 	rng := rand.New(rand.NewSource(0xBEEF))
 	for range 50 {
 		n := rng.Intn(3000)
@@ -192,6 +196,8 @@ func TestDiffStreamingAgainstGost(t *testing.T) {
 // oracle for the 256-bit variant, specifically exercising the 256-bit IV
 // (all-0x01) and MSB_256 truncation under partial-buffer and multi-block state.
 func TestDiffStreaming256AgainstGost(t *testing.T) {
+	t.Parallel()
+
 	rng := rand.New(rand.NewSource(0xCAFE))
 	for range 50 {
 		n := rng.Intn(3000)
@@ -221,6 +227,8 @@ func TestDiffStreaming256AgainstGost(t *testing.T) {
 // either side: calls Sum twice (must be equal), then writes more data, calls
 // Sum again, and diffs against the oracle on the full concatenated input.
 func TestSumNonDestructiveParity(t *testing.T) {
+	t.Parallel()
+
 	msg1 := []byte("abc")
 	msg2 := []byte("def")
 
@@ -281,6 +289,8 @@ func TestSumNonDestructiveParity(t *testing.T) {
 // fresh digest, diffed against the oracle: hash msg1, sum (to trigger internal
 // state), reset, hash msg2, diff result against oracle(msg2).
 func TestResetReuseParity(t *testing.T) {
+	t.Parallel()
+
 	rng := rand.New(rand.NewSource(0xDEADBEEF))
 	for range 20 {
 		n := rng.Intn(300)

@@ -38,6 +38,8 @@ func mustHex(s string) []byte {
 //
 //	E_ctr (line 105), iv_ctr (line 178).
 func TestCTR_Kuznyechik_KAT(t *testing.T) {
+	t.Parallel()
+
 	key := mustHex("8899aabbccddeeff0011223344556677" +
 		"fedcba98765432100123456789abcdef")
 
@@ -87,6 +89,8 @@ func TestCTR_Kuznyechik_KAT(t *testing.T) {
 //
 // Magma block size is 8; the 4-byte IV is zero-padded to 8 bytes.
 func TestCTR_Magma_KAT(t *testing.T) {
+	t.Parallel()
+
 	key := mustHex("ffeeddccbbaa99887766554433221100" +
 		"f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff")
 
@@ -129,6 +133,8 @@ func TestCTR_Magma_KAT(t *testing.T) {
 // gamma produced by a fresh CTR initialized with IV+1. This proves big-endian
 // carry propagation is correct for both Kuznyechik and Magma.
 func TestCTR_CounterIncrement(t *testing.T) {
+	t.Parallel()
+
 	for _, tc := range []struct {
 		name      string
 		newCipher func(key []byte) cipher.Block
@@ -149,6 +155,8 @@ func TestCTR_CounterIncrement(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			key := mustHex(tc.key)
 			iv := mustHex(tc.iv)
 			bs := len(iv) // blockSize.
@@ -182,6 +190,8 @@ func TestCTR_CounterIncrement(t *testing.T) {
 // TestCTR_ErrorOnBadIV ensures NewCTR rejects IVs whose length differs from
 // the block size.
 func TestCTR_ErrorOnBadIV(t *testing.T) {
+	t.Parallel()
+
 	key := mustHex("8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef")
 	block := gost3412128.NewCipher(key) // blockSize = 16.
 
@@ -196,6 +206,8 @@ func TestCTR_ErrorOnBadIV(t *testing.T) {
 // TestCTR_PartialBlock verifies that XORKeyStream works correctly when called
 // with lengths that don't align to the block boundary (split at various offsets).
 func TestCTR_PartialBlock(t *testing.T) {
+	t.Parallel()
+
 	key := mustHex("8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef")
 	iv := make([]byte, 16)
 
@@ -225,6 +237,8 @@ func TestCTR_PartialBlock(t *testing.T) {
 // integration test under `-tags "tarantoolee gost"` and by the on-the-wire MAC
 // check performed by the record layer protector.
 func TestCTRACPKM_Roundtrip(t *testing.T) {
+	t.Parallel()
+
 	for _, tc := range []struct {
 		name        string
 		blockSize   int
@@ -239,6 +253,8 @@ func TestCTRACPKM_Roundtrip(t *testing.T) {
 			func(k []byte) cipher.Block { return gost341264.NewCipher(k) }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			key := make([]byte, tc.keyLen)
 			for i := range key {
 				key[i] = byte(i + 1)
@@ -285,6 +301,8 @@ func TestCTRACPKM_Roundtrip(t *testing.T) {
 // TestCTRACPKM_MatchesPlainCTR_WhenSectionZero verifies that
 // NewCTRACPKM(..., sectionSize=0) behaves identically to NewCTR.
 func TestCTRACPKM_MatchesPlainCTR_WhenSectionZero(t *testing.T) {
+	t.Parallel()
+
 	key := make([]byte, 32)
 	for i := range key {
 		key[i] = byte(i)

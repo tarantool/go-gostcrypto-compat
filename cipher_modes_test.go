@@ -57,6 +57,8 @@ func xorKeyStreamByChunks(s cipher.Stream, src []byte, chunk int) []byte {
 // TestCipherModes_EngineVectors ports the exact KATs from tmp/engine/test_ciphers.c
 // that are not already covered by the existing CTR/OMAC tests.
 func TestCipherModes_EngineVectors(t *testing.T) {
+	t.Parallel()
+
 	keyKuz := mustHexMode(t, "8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef")
 	keyMag := mustHexMode(t, "ffeeddccbbaa99887766554433221100f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff")
 
@@ -87,6 +89,8 @@ func TestCipherModes_EngineVectors(t *testing.T) {
 	copy(ivACPKMMaster, bytes.Repeat([]byte{0xff}, 8))
 
 	t.Run("Kuznyechik-ECB", func(t *testing.T) {
+		t.Parallel()
+
 		block := gost3412128.NewCipher(keyKuz)
 		want := mustHexMode(t,
 			"7f679d90bebc24305a468d42b9d4edcd"+
@@ -105,6 +109,8 @@ func TestCipherModes_EngineVectors(t *testing.T) {
 	})
 
 	t.Run("Kuznyechik-OFB", func(t *testing.T) {
+		t.Parallel()
+
 		block := gost3412128.NewCipher(keyKuz)
 		want := mustHexMode(t,
 			"81800a59b1842b24ff1f795e897abd95"+
@@ -124,6 +130,8 @@ func TestCipherModes_EngineVectors(t *testing.T) {
 	})
 
 	t.Run("Kuznyechik-CBC", func(t *testing.T) {
+		t.Parallel()
+
 		block := gost3412128.NewCipher(keyKuz)
 		want := mustHexMode(t,
 			"689972d4a085fa4d90e52e3d6d7dcc27"+
@@ -146,6 +154,8 @@ func TestCipherModes_EngineVectors(t *testing.T) {
 	})
 
 	t.Run("Kuznyechik-CFB", func(t *testing.T) {
+		t.Parallel()
+
 		block := gost3412128.NewCipher(keyKuz)
 		want := mustHexMode(t,
 			"81800a59b1842b24ff1f795e897abd95"+
@@ -165,6 +175,8 @@ func TestCipherModes_EngineVectors(t *testing.T) {
 	})
 
 	t.Run("Kuznyechik-CTR-ACPKM-32", func(t *testing.T) {
+		t.Parallel()
+
 		iv := make([]byte, 16)
 		copy(iv, mustHexMode(t, "1234567890abcef0"))
 
@@ -191,6 +203,8 @@ func TestCipherModes_EngineVectors(t *testing.T) {
 	})
 
 	t.Run("Kuznyechik-CTR-ACPKM-Master-96", func(t *testing.T) {
+		t.Parallel()
+
 		want := mustHexMode(t,
 			"0cabf1f2efbc4ac16048df1a24c605b2"+
 				"c0d1673d7586a8ec0dd42c45a4f95bae"+
@@ -216,6 +230,8 @@ func TestCipherModes_EngineVectors(t *testing.T) {
 	})
 
 	t.Run("Magma-CBC", func(t *testing.T) {
+		t.Parallel()
+
 		block := gost341264.NewCipher(keyMag)
 		want := mustHexMode(t,
 			"96d1b05eea683919f396b78c1d47bb61"+

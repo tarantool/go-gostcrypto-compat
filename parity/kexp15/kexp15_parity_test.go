@@ -40,6 +40,8 @@ func mustHexF(s string) []byte {
 // impl reproduce the pinned Magma etalon (gost-engine 3.0.3,
 // tmp/engine/test_keyexpimp.c:47-76).
 func TestKexp15Conformance(t *testing.T) {
+	t.Parallel()
+
 	shared := mustHexF("8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef")
 	cipherKey := mustHexF("202122232425262728292a2b2c2d2e2f38393a3b3c3d3e3f3031323334353637")
 	macKey := mustHexF("08090a0b0c0d0e0f0001020304050607101112131415161718191a1b1c1d1e1f")
@@ -81,6 +83,8 @@ func TestKexp15Conformance(t *testing.T) {
 //   - IV:                                 line 3195
 //   - want (PMSEXP):                      lines 3198-3200
 func TestKexp15Conformance_Kuznyechik(t *testing.T) {
+	t.Parallel()
+
 	shared := mustHexF("a5576ce7924a24f58113808dbd9ef856f5bdc3b183ce5dadca36a53aa077651d")
 	macKey := mustHexF("7dac56e48a4dc170faa8fcbae20db845450cccc4c6328bdc8d01157cefa2a5f1")
 	cipherKey := mustHexF("1f1cbad8866166f01ffaab0152e24bf4609d5f46a5c899c787900d08b9fcad24")
@@ -111,6 +115,8 @@ func TestKexp15Conformance_Kuznyechik(t *testing.T) {
 // on accept/reject for invalid inputs (KXP-03): both must reject the same
 // malformed key/IV/variant inputs. Mirrors gostcrypto/kexp15 TestKexp15_ErrorCases.
 func TestKexp15_ErrorCasesParity(t *testing.T) {
+	t.Parallel()
+
 	good := struct {
 		shared, cipherKey, macKey, iv []byte
 	}{
@@ -135,6 +141,8 @@ func TestKexp15_ErrorCasesParity(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			_, errRef := gost.Kexp15(tc.refVariant, tc.shared, tc.cipherKey, tc.macKey, tc.iv)
 			_, errGot := Kexp15(tc.myVariant, tc.shared, tc.cipherKey, tc.macKey, tc.iv)
 

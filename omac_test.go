@@ -22,6 +22,8 @@ import (
 // The standard produces a 16-byte CMAC; only the leading 8 bytes match the
 // published 8-byte truncated tag (tmp/engine/test_digest.c:104).
 func TestOMAC_Kuznyechik_KAT(t *testing.T) {
+	t.Parallel()
+
 	// Key K — tmp/engine/test_digest.c:71-74.
 	key, err := hex.DecodeString(
 		"8899aabbccddeeff0011223344556677" +
@@ -76,6 +78,8 @@ func TestOMAC_Kuznyechik_KAT(t *testing.T) {
 // The standard produces an 8-byte CMAC; only the leading 4 bytes match the
 // published 4-byte truncated tag (tmp/engine/test_digest.c:109).
 func TestOMAC_Magma_KAT(t *testing.T) {
+	t.Parallel()
+
 	// Key Km — tmp/engine/test_digest.c:79-82.
 	key, err := hex.DecodeString(
 		"ffeeddccbbaa99887766554433221100" +
@@ -119,6 +123,8 @@ func TestOMAC_Magma_KAT(t *testing.T) {
 // OMAC state (without any intervening Writes) return identical bytes.
 // Uses the Kuznyechik KAT vector as input.
 func TestOMAC_SumIdempotent(t *testing.T) {
+	t.Parallel()
+
 	key, _ := hex.DecodeString(
 		"8899aabbccddeeff0011223344556677" +
 			"fedcba98765432100123456789abcdef",
@@ -157,6 +163,8 @@ func TestOMAC_SumIdempotent(t *testing.T) {
 // This confirms that Sum does not mutate receiver state — additional writes
 // after a Sum must still work correctly.
 func TestOMAC_SumAfterWrite(t *testing.T) {
+	t.Parallel()
+
 	key, _ := hex.DecodeString(
 		"8899aabbccddeeff0011223344556677" +
 			"fedcba98765432100123456789abcdef",

@@ -20,6 +20,8 @@ import (
 // TestMagmaDifferential cross-checks the clean-room impl against the repo's
 // gostcryptocompat.MagmaEncrypt/MagmaDecrypt black-box oracle over random blocks.
 func TestMagmaDifferential(t *testing.T) {
+	t.Parallel()
+
 	rng := rand.New(rand.NewSource(42))
 	key := make([]byte, KeySize)
 	pt := make([]byte, BlockSize)
@@ -108,6 +110,8 @@ func FuzzMagmaDifferential(f *testing.F) {
 // the gogost oracle must produce the same ciphertext for every block.
 // MAG-01: instance-reuse path.
 func TestMagmaCipherReuse(t *testing.T) {
+	t.Parallel()
+
 	key := mustHex("ffeeddccbbaa99887766554433221100f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff")
 	blocks := [][]byte{
 		mustHex("fedcba9876543210"),
@@ -134,6 +138,8 @@ func TestMagmaCipherReuse(t *testing.T) {
 // TestMagmaDecryptCipherReuse exercises Cipher instance reuse across multiple
 // sequential block decryptions. MAG-01: instance-reuse path for Decrypt.
 func TestMagmaDecryptCipherReuse(t *testing.T) {
+	t.Parallel()
+
 	key := mustHex("ffeeddccbbaa99887766554433221100f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff")
 	// Use ciphertext blocks (output of encryption for the same key above).
 	blocks := [][]byte{
@@ -162,6 +168,8 @@ func TestMagmaDecryptCipherReuse(t *testing.T) {
 // yield the same result as encrypting into a fresh destination buffer.
 // MAG-01: dst==src aliasing path.
 func TestMagmaEncryptInPlace(t *testing.T) {
+	t.Parallel()
+
 	key := mustHex("ffeeddccbbaa99887766554433221100f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff")
 	pt := mustHex("fedcba9876543210")
 
@@ -189,6 +197,8 @@ func TestMagmaEncryptInPlace(t *testing.T) {
 // TestMagmaDecryptInPlace exercises dst==src aliasing for Decrypt.
 // MAG-01: dst==src aliasing path for Decrypt.
 func TestMagmaDecryptInPlace(t *testing.T) {
+	t.Parallel()
+
 	key := mustHex("ffeeddccbbaa99887766554433221100f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff")
 	// Ciphertext: the result of encrypting "fedcba9876543210" with the key above.
 	ct := MagmaEncrypt(key, mustHex("fedcba9876543210"))

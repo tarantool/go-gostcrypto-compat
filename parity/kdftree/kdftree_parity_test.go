@@ -68,6 +68,8 @@ func oracleHMAC(key, counter, label, seed, lRepr []byte) []byte {
 // Differential conformance against the in-repo oracle (gostcryptocompat), the
 // pinned authoritative KAT-1 vector, and raw gogost KDF.Derive (32B only, D1).
 func TestKDFTree256Conformance(t *testing.T) {
+	t.Parallel()
+
 	key := mustHexG(t, "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F")
 	cases := []struct {
 		name      string
@@ -109,6 +111,8 @@ func TestKDFTree256Conformance(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			got := KDFTree256(key, tc.label, tc.seed, 1, tc.keyOutLen)
 			if len(got) != tc.keyOutLen {
 				t.Fatalf("len = %d, want %d", len(got), tc.keyOutLen)
@@ -144,6 +148,8 @@ func TestKDFTree256Conformance(t *testing.T) {
 // oracleHMAC is independent of both KDFTree256 and the facade loop — it uses
 // gogost's gost34112012256.New directly.
 func TestKDFTree256_CounterWidth_Parity(t *testing.T) {
+	t.Parallel()
+
 	key := mustHexG(t, "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F")
 	label := mustHexG(t, "26BDB878")
 	seed := mustHexG(t, "AF21434145656378")
@@ -153,6 +159,8 @@ func TestKDFTree256_CounterWidth_Parity(t *testing.T) {
 
 	for r := 2; r <= 4; r++ {
 		t.Run(map[int]string{2: "r=2", 3: "r=3", 4: "r=4"}[r], func(t *testing.T) {
+			t.Parallel()
+
 			got := KDFTree256(key, label, seed, r, 64)
 			if len(got) != 64 {
 				t.Fatalf("len = %d, want 64", len(got))
@@ -182,6 +190,8 @@ func TestKDFTree256_CounterWidth_Parity(t *testing.T) {
 // the inline oracleHMAC, exercising counter value 3 (KDF-03: counter >= 3).
 // The facade only supports multiples of 32, so we use oracleHMAC as the oracle.
 func TestKDFTree256_MultiBlock_Parity(t *testing.T) {
+	t.Parallel()
+
 	key := mustHexG(t, "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F")
 	label := mustHexG(t, "26BDB878")
 	seed := mustHexG(t, "AF21434145656378")
@@ -209,6 +219,8 @@ func TestKDFTree256_MultiBlock_Parity(t *testing.T) {
 // multiple of 32) against the inline oracleHMAC (KDF-03: non-multiples-of-32
 // truncation never exercised via the facade, which panics on non-multiples).
 func TestKDFTree256_Truncation_Parity(t *testing.T) {
+	t.Parallel()
+
 	key := mustHexG(t, "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F")
 	label := mustHexG(t, "26BDB878")
 	seed := mustHexG(t, "AF21434145656378")
@@ -225,6 +237,8 @@ func TestKDFTree256_Truncation_Parity(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run("outLen="+string(rune('0'+tc.outLen/10))+string(rune('0'+tc.outLen%10)), func(t *testing.T) {
+			t.Parallel()
+
 			got := KDFTree256(key, label, seed, 1, tc.outLen)
 			if len(got) != tc.outLen {
 				t.Fatalf("len = %d, want %d", len(got), tc.outLen)

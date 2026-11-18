@@ -213,6 +213,8 @@ func hexstr(b []byte) string {
 // G89C-01: availability is probed ONCE before the loop; any per-iteration CLI
 // failure is a real error (t.Fatalf), not a skip.
 // G89C-02: iter%7==0 generates n>=2049, exercising the second meshing boundary.
+//
+//nolint:paralleltest // the subtests draw their inputs in turn from one seeded rng.
 func TestDiff_GostEngineCLI(t *testing.T) {
 	// G89C-01: probe availability once; skip the whole test if the binary is absent.
 	bin, ok := isEngineAvailable()
@@ -294,6 +296,8 @@ func TestDiff_GostEngineCLI(t *testing.T) {
 // with n<1024 the counter never wraps within 128 blocks so the D4 carry
 // defect does not trigger, making this a valid oracle for tc26-Z in this
 // regime — same analysis as for CryptoPro-A.
+//
+//nolint:paralleltest // the subtests draw chunk sizes in turn from one seeded rng.
 func TestDiff_InternalGostOracle(t *testing.T) {
 	key := make([]byte, gost28147.KeySize)
 	iv := make([]byte, gost28147.BlockSize)
@@ -442,6 +446,8 @@ func FuzzDiff_InternalGostOracle(f *testing.F) {
 // post-mesh bytes equal the pinned engine KAT, proving the divergence is the
 // oracle's missing meshing, not a bug on our side.
 func TestDiff_OracleLacksMeshing(t *testing.T) {
+	t.Parallel()
+
 	key := make([]byte, gost28147.KeySize)
 	iv := make([]byte, gost28147.BlockSize)
 	sbox := gost28147.SboxCryptoProA

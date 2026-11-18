@@ -45,11 +45,15 @@ func seedHex(s string) []byte {
 // its own anchor independent of the root-package oracle. These are the same
 // vectors used in the root-package TestGost_GOST28147_IMIT_Wrapper_* tests.
 func TestEngineVectors_IMIT(t *testing.T) {
+	t.Parallel()
+
 	// key = "0123456789abcdef" x 2 (32 bytes raw ASCII)
 	// src: tmp/engine/test/02-mac.t:51
 	key := []byte("0123456789abcdef0123456789abcdef")
 
 	t.Run("no-meshing-1024bytes", func(t *testing.T) {
+		t.Parallel()
+
 		// testdata.dat = "12345670" x 128 (1024 bytes); meshing fires at >1024
 		// so this vector sits exactly on the boundary without triggering it.
 		// src: tmp/engine/test/02-mac.t:162 (gost-mac default 4-byte output)
@@ -64,6 +68,8 @@ func TestEngineVectors_IMIT(t *testing.T) {
 	})
 
 	t.Run("key-meshing-266240bytes", func(t *testing.T) {
+		t.Parallel()
+
 		// testbig.dat = ("12345670" x 8 + "\n") x 4096 (266240 bytes);
 		// crosses 260 CryptoPro meshing boundaries (every 1024 bytes).
 		// src: tmp/engine/test/02-mac.t:185 (gost-mac default 4-byte output)
@@ -85,6 +91,8 @@ func TestEngineVectors_IMIT(t *testing.T) {
 // chosen to exercise the short-message finalization (1..8 and 9..16) and the
 // key-meshing path (> 1024 bytes).
 func TestDiff_InternalGostOracle(t *testing.T) {
+	t.Parallel()
+
 	rng := rand.New(rand.NewSource(0x1234_5678))
 
 	// Deterministic length set: every short length 1..16 (short-message
@@ -136,6 +144,8 @@ func TestDiff_InternalGostOracle(t *testing.T) {
 // Oracle note: GOST28147Cipher.SeqMACBlock (exports_gost.go:97) allocates a
 // fresh MAC per call (NewMAC → Write → Sum), so MAC.Sum destructiveness does
 // not apply here.
+//
+//nolint:paralleltest // the subtests draw their inputs in turn from one seeded rng.
 func TestDiff_SeqMACBlock(t *testing.T) {
 	rng := rand.New(rand.NewSource(0xDEAD_BEEF))
 
