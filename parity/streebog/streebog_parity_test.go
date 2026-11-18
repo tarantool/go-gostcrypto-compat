@@ -26,12 +26,14 @@ func TestDiffAgainstGost(t *testing.T) {
 		rng.Read(msg)
 
 		got256 := streebog.Sum256(msg)
+
 		ref256 := gost.Streebog256(msg)
 		if !bytes.Equal(got256[:], ref256) {
 			t.Fatalf("256 mismatch len=%d\n clean-room %x\n oracle     %x", n, got256, ref256)
 		}
 
 		got512 := streebog.Sum512(msg)
+
 		ref512 := gost.Streebog512(msg)
 		if !bytes.Equal(got512[:], ref512) {
 			t.Fatalf("512 mismatch len=%d\n clean-room %x\n oracle     %x", n, got512, ref512)
@@ -52,12 +54,14 @@ func FuzzDiffAgainstGost(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, msg []byte, split uint) {
 		got256 := streebog.Sum256(msg)
+
 		ref256 := gost.Streebog256(msg)
 		if !bytes.Equal(got256[:], ref256) {
 			t.Fatalf("256 mismatch len=%d\n clean-room %x\n oracle     %x", len(msg), got256, ref256)
 		}
 
 		got512 := streebog.Sum512(msg)
+
 		ref512 := gost.Streebog512(msg)
 		if !bytes.Equal(got512[:], ref512) {
 			t.Fatalf("512 mismatch len=%d\n clean-room %x\n oracle     %x", len(msg), got512, ref512)
@@ -65,6 +69,7 @@ func FuzzDiffAgainstGost(f *testing.F) {
 
 		// Streaming 512: split at a fuzzer-chosen offset, diff against one-shot.
 		h512 := streebog.New512()
+
 		if len(msg) > 0 {
 			off := int(split % uint(len(msg)+1))
 			h512.Write(msg[:off])
@@ -72,6 +77,7 @@ func FuzzDiffAgainstGost(f *testing.F) {
 		} else {
 			h512.Write(msg)
 		}
+
 		gotStream512 := h512.Sum(nil)
 		if !bytes.Equal(gotStream512, ref512) {
 			t.Fatalf("streaming 512 mismatch len=%d\n clean-room %x\n oracle     %x", len(msg), gotStream512, ref512)
@@ -80,6 +86,7 @@ func FuzzDiffAgainstGost(f *testing.F) {
 		// Streaming 256: same split, diff against one-shot oracle. Exercises
 		// the 256-bit IV and MSB_256 truncation under partial-buffer state.
 		h256 := streebog.New256()
+
 		if len(msg) > 0 {
 			off := int(split % uint(len(msg)+1))
 			h256.Write(msg[:off])
@@ -87,6 +94,7 @@ func FuzzDiffAgainstGost(f *testing.F) {
 		} else {
 			h256.Write(msg)
 		}
+
 		gotStream256 := h256.Sum(nil)
 		if !bytes.Equal(gotStream256, ref256) {
 			t.Fatalf("streaming 256 mismatch len=%d\n clean-room %x\n oracle     %x", len(msg), gotStream256, ref256)
@@ -113,9 +121,11 @@ func FuzzDiffAgainstGostMultiChunk(f *testing.F) {
 
 		// Derive two split points, both in [0, len(msg)], with off1 <= off2.
 		n := len(msg)
+
 		var off1, off2 int
 		if n > 0 {
 			off1 = int(split1 % uint(n+1))
+
 			rem := n - off1
 			if rem > 0 {
 				off2 = off1 + int(split2%uint(rem+1))
@@ -129,6 +139,7 @@ func FuzzDiffAgainstGostMultiChunk(f *testing.F) {
 		h512.Write(msg[:off1])
 		h512.Write(msg[off1:off2])
 		h512.Write(msg[off2:])
+
 		got512 := h512.Sum(nil)
 		if !bytes.Equal(got512, ref512) {
 			t.Fatalf("3-chunk 512 mismatch len=%d splits=%d,%d\n got %x\n ref %x",
@@ -140,6 +151,7 @@ func FuzzDiffAgainstGostMultiChunk(f *testing.F) {
 		h256.Write(msg[:off1])
 		h256.Write(msg[off1:off2])
 		h256.Write(msg[off2:])
+
 		got256 := h256.Sum(nil)
 		if !bytes.Equal(got256, ref256) {
 			t.Fatalf("3-chunk 256 mismatch len=%d splits=%d,%d\n got %x\n ref %x",
@@ -158,13 +170,17 @@ func TestDiffStreamingAgainstGost(t *testing.T) {
 		rng.Read(msg)
 
 		h := streebog.New512()
+
 		for off := 0; off < n; {
 			chunk := rng.Intn(70) + 1
 			end := min(off+chunk, n)
 			h.Write(msg[off:end])
+
 			off = end
 		}
+
 		got := h.Sum(nil)
+
 		ref := gost.Streebog512(msg)
 		if !bytes.Equal(got, ref) {
 			t.Fatalf("streaming 512 mismatch len=%d\n clean-room %x\n oracle     %x", n, got, ref)
@@ -183,13 +199,17 @@ func TestDiffStreaming256AgainstGost(t *testing.T) {
 		rng.Read(msg)
 
 		h := streebog.New256()
+
 		for off := 0; off < n; {
 			chunk := rng.Intn(70) + 1
 			end := min(off+chunk, n)
 			h.Write(msg[off:end])
+
 			off = end
 		}
+
 		got := h.Sum(nil)
+
 		ref := gost.Streebog256(msg)
 		if !bytes.Equal(got, ref) {
 			t.Fatalf("streaming 256 mismatch len=%d\n clean-room %x\n oracle     %x", n, got, ref)
@@ -207,12 +227,16 @@ func TestSumNonDestructiveParity(t *testing.T) {
 	// Clean-room: Sum twice, then Write more, Sum again.
 	h := streebog.New512()
 	h.Write(msg1)
+
 	d1a := h.Sum(nil)
-	d1b := h.Sum(nil) // second Sum — must equal first
+
+	d1b := h.Sum(nil) // second Sum — must equal first.
 	if !bytes.Equal(d1a, d1b) {
 		t.Fatalf("clean-room Sum mutated receiver: %x != %x", d1a, d1b)
 	}
+
 	h.Write(msg2)
+
 	d2 := h.Sum(nil)
 
 	// Oracle: hash of the concatenated input must equal d2.
@@ -230,18 +254,23 @@ func TestSumNonDestructiveParity(t *testing.T) {
 	// Repeat for the 256-bit variant.
 	h256 := streebog.New256()
 	h256.Write(msg1)
+
 	d1a256 := h256.Sum(nil)
+
 	d1b256 := h256.Sum(nil)
 	if !bytes.Equal(d1a256, d1b256) {
 		t.Fatalf("clean-room 256 Sum mutated receiver: %x != %x", d1a256, d1b256)
 	}
+
 	h256.Write(msg2)
+
 	d2_256 := h256.Sum(nil)
 
 	ref256 := gost.Streebog256(append(msg1, msg2...))
 	if !bytes.Equal(d2_256, ref256) {
 		t.Fatalf("clean-room 256 post-Sum Write mismatch\n got %x\n ref %x", d2_256, ref256)
 	}
+
 	ref1_256 := gost.Streebog256(msg1)
 	if !bytes.Equal(d1a256, ref1_256) {
 		t.Fatalf("clean-room 256 Sum(msg1) mismatch\n got %x\n ref %x", d1a256, ref1_256)
@@ -257,6 +286,7 @@ func TestResetReuseParity(t *testing.T) {
 		n := rng.Intn(300)
 		msg1 := make([]byte, n)
 		rng.Read(msg1)
+
 		m2 := rng.Intn(300)
 		msg2 := make([]byte, m2)
 		rng.Read(msg2)
@@ -264,10 +294,13 @@ func TestResetReuseParity(t *testing.T) {
 		// 512-bit reset-reuse.
 		h512 := streebog.New512()
 		h512.Write(msg1)
-		_ = h512.Sum(nil) // consume once, then reset
+
+		_ = h512.Sum(nil) // consume once, then reset.
 		h512.Reset()
 		h512.Write(msg2)
+
 		got512 := h512.Sum(nil)
+
 		ref512 := gost.Streebog512(msg2)
 		if !bytes.Equal(got512, ref512) {
 			t.Fatalf("512 reset-reuse mismatch len1=%d len2=%d\n got %x\n ref %x",
@@ -277,10 +310,13 @@ func TestResetReuseParity(t *testing.T) {
 		// 256-bit reset-reuse.
 		h256 := streebog.New256()
 		h256.Write(msg1)
+
 		_ = h256.Sum(nil)
 		h256.Reset()
 		h256.Write(msg2)
+
 		got256 := h256.Sum(nil)
+
 		ref256 := gost.Streebog256(msg2)
 		if !bytes.Equal(got256, ref256) {
 			t.Fatalf("256 reset-reuse mismatch len1=%d len2=%d\n got %x\n ref %x",

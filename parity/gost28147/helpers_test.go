@@ -7,10 +7,12 @@ import (
 
 func mustHex(t *testing.T, s string) []byte {
 	t.Helper()
+
 	b, err := hex.DecodeString(s)
 	if err != nil {
 		t.Fatalf("bad hex %q: %v", s, err)
 	}
+
 	return b
 }
 
@@ -20,11 +22,13 @@ func seedHex(s string) []byte {
 	if err != nil {
 		panic(err)
 	}
+
 	return b
 }
 
 func fixLen(b []byte, n int) []byte {
 	out := make([]byte, n)
 	copy(out, b)
+
 	return out
 }

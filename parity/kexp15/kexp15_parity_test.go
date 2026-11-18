@@ -32,6 +32,7 @@ func mustHexF(s string) []byte {
 	if err != nil {
 		panic(err)
 	}
+
 	return b
 }
 
@@ -49,6 +50,7 @@ func TestKexp15Conformance(t *testing.T) {
 	if err != nil {
 		t.Fatalf("gost.Kexp15: %v", err)
 	}
+
 	if !bytes.Equal(ref, want) {
 		t.Fatalf("oracle disagrees with pinned vector:\n got  %x\n want %x", ref, want)
 	}
@@ -57,6 +59,7 @@ func TestKexp15Conformance(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Kexp15: %v", err)
 	}
+
 	if !bytes.Equal(got, want) {
 		t.Fatalf("clean-room mismatch:\n got  %x\n want %x", got, want)
 	}
@@ -89,6 +92,7 @@ func TestKexp15Conformance_Kuznyechik(t *testing.T) {
 	if err != nil {
 		t.Fatalf("gost.Kexp15: %v", err)
 	}
+
 	if !bytes.Equal(ref, want) {
 		t.Fatalf("oracle disagrees with RFC 9189 A.1.3.2:\n got  %x\n want %x", ref, want)
 	}
@@ -97,6 +101,7 @@ func TestKexp15Conformance_Kuznyechik(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Kexp15: %v", err)
 	}
+
 	if !bytes.Equal(got, want) {
 		t.Fatalf("clean-room mismatch:\n got  %x\n want %x", got, want)
 	}
@@ -136,6 +141,7 @@ func TestKexp15_ErrorCasesParity(t *testing.T) {
 			if (errRef == nil) != (errGot == nil) {
 				t.Fatalf("error-agreement mismatch: oracle err=%v clean-room err=%v", errRef, errGot)
 			}
+
 			if errRef == nil {
 				t.Fatalf("expected both sides to reject, got nil error")
 			}
@@ -147,6 +153,7 @@ func TestKexp15_ErrorCasesParity(t *testing.T) {
 func fixKey(b []byte, n int) []byte {
 	out := make([]byte, n)
 	copy(out, b)
+
 	return out
 }
 
@@ -193,14 +200,17 @@ func FuzzKexp15Conformance(f *testing.F) {
 		if len(shared) == 0 {
 			shared = []byte{0x01}
 		}
+
 		refVariant := gost.KexpMagma
 		myVariant := KexpMagma
 		ivLen := 4
+
 		if kuz {
 			refVariant = gost.KexpKuznyechik
 			myVariant = KexpKuznyechik
 			ivLen = 8
 		}
+
 		cipherKey := fixKey(cipherRaw, 32)
 		macKey := fixKey(macRaw, 32)
 		iv := fixKey(ivRaw, ivLen)
@@ -211,9 +221,11 @@ func FuzzKexp15Conformance(f *testing.F) {
 		if (errRef == nil) != (errGot == nil) {
 			t.Fatalf("error mismatch: ref=%v mynew=%v", errRef, errGot)
 		}
+
 		if errRef != nil {
 			return
 		}
+
 		if !bytes.Equal(ref, got) {
 			t.Fatalf("differential mismatch (kuz=%v):\n ref   %x\n mynew %x", kuz, ref, got)
 		}

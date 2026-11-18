@@ -10,14 +10,17 @@ import (
 
 func deterministicPrivateKey(t *testing.T, curve *gost3410.Curve, seed byte) *gost3410.PrivateKey {
 	t.Helper()
+
 	raw := make([]byte, curve.PointSize())
 	for i := range raw {
 		raw[i] = seed + byte(i+1)
 	}
+
 	prv, err := gost3410.NewPrivateKey(curve, raw)
 	if err != nil {
 		t.Fatalf("NewPrivateKey(%s): %v", curve.Name, err)
 	}
+
 	return prv
 }
 
@@ -46,6 +49,7 @@ func TestCurveSignVerify_AllCurves(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			curve := tc.curve()
 			prv := deterministicPrivateKey(t, curve, byte(0x10+i))
+
 			pub, err := prv.PublicKey()
 			if err != nil {
 				t.Fatalf("PublicKey(%s): %v", curve.Name, err)
@@ -55,11 +59,14 @@ func TestCurveSignVerify_AllCurves(t *testing.T) {
 			for i := range digest {
 				digest[i] = byte(0x80 + i)
 			}
+
 			rnd := bytes.NewReader(bytes.Repeat([]byte{byte(0x30 + i + 1)}, curve.PointSize()*4))
+
 			sig, err := prv.SignDigest(digest, rnd)
 			if err != nil {
 				t.Fatalf("SignDigest(%s): %v", curve.Name, err)
 			}
+
 			if len(sig) != 2*curve.PointSize() {
 				t.Fatalf("signature len(%s)=%d, want %d", curve.Name, len(sig), 2*curve.PointSize())
 			}
@@ -68,16 +75,20 @@ func TestCurveSignVerify_AllCurves(t *testing.T) {
 			if err != nil {
 				t.Fatalf("VerifyDigest(%s): %v", curve.Name, err)
 			}
+
 			if !ok {
 				t.Fatalf("VerifyDigest(%s): signature rejected", curve.Name)
 			}
 
 			tamperedDigest := append([]byte(nil), digest...)
+
 			tamperedDigest[len(tamperedDigest)-1] ^= 0x01
+
 			ok, err = pub.VerifyDigest(tamperedDigest, sig)
 			if err != nil {
 				t.Fatalf("VerifyDigest tampered digest(%s): %v", curve.Name, err)
 			}
+
 			if ok {
 				t.Fatalf("VerifyDigest(%s): tampered digest unexpectedly accepted", curve.Name)
 			}
@@ -112,42 +123,52 @@ func TestCurveByOID_SupportedCurvesSanity(t *testing.T) {
 			if err != nil {
 				t.Fatalf("CurveByOID(%v): %v", tc.oid, err)
 			}
+
 			want := tc.curve()
 			if !got.inner.Equal(want) {
 				t.Fatalf("CurveByOID(%v) returned unexpected curve:\n got  %s\n want %s", tc.oid, got.inner.Name, want.Name)
 			}
+
 			if got.inner.Name == "" {
 				t.Fatal("curve Name is empty")
 			}
+
 			if got.PointSize() != tc.pointSize {
 				t.Fatalf("PointSize(%s)=%d, want %d", got.inner.Name, got.PointSize(), tc.pointSize)
 			}
+
 			if !got.inner.Contains(got.inner.X, got.inner.Y) {
 				t.Fatalf("generator for %s is not on curve", got.inner.Name)
 			}
+
 			if got.inner.Co.Cmp(big.NewInt(1)) != 0 && got.inner.Co.Cmp(big.NewInt(4)) != 0 {
 				t.Fatalf("unexpected cofactor for %s: %s", got.inner.Name, got.inner.Co.String())
 			}
 
 			gc := got.inner
 			qPlus1 := new(big.Int).Add(gc.Q, big.NewInt(1))
+
 			x1, y1, err := gc.Exp(qPlus1, gc.X, gc.Y)
 			if err != nil {
 				t.Fatalf("Exp(Q+1, G) for %s: %v", gc.Name, err)
 			}
+
 			if x1.Cmp(gc.X) != 0 || y1.Cmp(gc.Y) != 0 {
 				t.Fatalf("generator order invariant failed for %s", gc.Name)
 			}
 
 			qPlus3 := new(big.Int).Add(gc.Q, big.NewInt(3))
+
 			x3a, y3a, err := gc.Exp(big.NewInt(3), gc.X, gc.Y)
 			if err != nil {
 				t.Fatalf("Exp(3, G) for %s: %v", gc.Name, err)
 			}
+
 			x3b, y3b, err := gc.Exp(qPlus3, gc.X, gc.Y)
 			if err != nil {
 				t.Fatalf("Exp(Q+3, G) for %s: %v", gc.Name, err)
 			}
+
 			if x3a.Cmp(x3b) != 0 || y3a.Cmp(y3b) != 0 {
 				t.Fatalf("cyclic subgroup invariant failed for %s", gc.Name)
 			}

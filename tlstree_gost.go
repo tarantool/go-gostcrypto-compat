@@ -27,6 +27,7 @@ func NewTLSTreeKuznyechikCTROMAC(masterKey []byte) *TLSTree {
 	if len(masterKey) != 32 {
 		panic("gost/tlstree: masterKey must be 32 bytes for KuznyechikCTROMAC")
 	}
+
 	return &TLSTree{
 		inner: gost34112012256.NewTLSTree(
 			gost34112012256.TLSGOSTR341112256WithKuznyechikCTROMAC,
@@ -43,6 +44,7 @@ func NewTLSTreeMagmaCTROMAC(masterKey []byte) *TLSTree {
 	if len(masterKey) != 32 {
 		panic("gost/tlstree: masterKey must be 32 bytes for MagmaCTROMAC")
 	}
+
 	return &TLSTree{
 		inner: gost34112012256.NewTLSTree(
 			gost34112012256.TLSGOSTR341112256WithMagmaCTROMAC,
@@ -61,5 +63,6 @@ func (t *TLSTree) Derive(seqNum uint64) []byte {
 	key, _ := t.inner.DeriveCached(seqNum)
 	out := make([]byte, 32)
 	copy(out, key)
+
 	return out
 }

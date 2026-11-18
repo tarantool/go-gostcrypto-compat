@@ -21,7 +21,7 @@ import (
 // The standard produces a 16-byte CMAC; only the leading 8 bytes match the
 // published 8-byte truncated tag (tmp/engine/test_digest.c:104).
 func TestOMAC_Kuznyechik_KAT(t *testing.T) {
-	// Key K — tmp/engine/test_digest.c:71-74
+	// Key K — tmp/engine/test_digest.c:71-74.
 	key, err := hex.DecodeString(
 		"8899aabbccddeeff0011223344556677" +
 			"fedcba98765432100123456789abcdef",
@@ -30,7 +30,7 @@ func TestOMAC_Kuznyechik_KAT(t *testing.T) {
 		t.Fatalf("hex key: %v", err)
 	}
 
-	// Plaintext P — tmp/engine/test_digest.c:88-93
+	// Plaintext P — tmp/engine/test_digest.c:88-93.
 	pt, err := hex.DecodeString(
 		"1122334455667700ffeeddccbbaa9988" +
 			"00112233445566778899aabbcceeff0a" +
@@ -41,11 +41,12 @@ func TestOMAC_Kuznyechik_KAT(t *testing.T) {
 		t.Fatalf("hex pt: %v", err)
 	}
 
-	// Expected 8-byte truncated MAC — tmp/engine/test_digest.c:104
+	// Expected 8-byte truncated MAC — tmp/engine/test_digest.c:104.
 	wantHex := "336f4d296059fbe3"
 	want, _ := hex.DecodeString(wantHex)
 
 	block := gost3412128.NewCipher(key)
+
 	mac, err := NewOMAC(block, 8)
 	if err != nil {
 		t.Fatalf("NewOMAC: %v", err)
@@ -54,6 +55,7 @@ func TestOMAC_Kuznyechik_KAT(t *testing.T) {
 	if _, err := mac.Write(pt); err != nil {
 		t.Fatalf("Write: %v", err)
 	}
+
 	got := mac.Sum(nil)
 
 	if !bytes.Equal(got, want) {
@@ -73,7 +75,7 @@ func TestOMAC_Kuznyechik_KAT(t *testing.T) {
 // The standard produces an 8-byte CMAC; only the leading 4 bytes match the
 // published 4-byte truncated tag (tmp/engine/test_digest.c:109).
 func TestOMAC_Magma_KAT(t *testing.T) {
-	// Key Km — tmp/engine/test_digest.c:79-82
+	// Key Km — tmp/engine/test_digest.c:79-82.
 	key, err := hex.DecodeString(
 		"ffeeddccbbaa99887766554433221100" +
 			"f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
@@ -82,7 +84,7 @@ func TestOMAC_Magma_KAT(t *testing.T) {
 		t.Fatalf("hex key: %v", err)
 	}
 
-	// Plaintext Pm — tmp/engine/test_digest.c:96-99
+	// Plaintext Pm — tmp/engine/test_digest.c:96-99.
 	pt, err := hex.DecodeString(
 		"92def06b3c130a59db54c704f8189d20" +
 			"4a98fb2e67a8024c8912409b17b57e41",
@@ -91,10 +93,11 @@ func TestOMAC_Magma_KAT(t *testing.T) {
 		t.Fatalf("hex pt: %v", err)
 	}
 
-	// Expected 4-byte truncated MAC — tmp/engine/test_digest.c:109
+	// Expected 4-byte truncated MAC — tmp/engine/test_digest.c:109.
 	want, _ := hex.DecodeString("154e7210")
 
 	block := gost341264.NewCipher(key)
+
 	mac, err := NewOMAC(block, 4)
 	if err != nil {
 		t.Fatalf("NewOMAC: %v", err)
@@ -103,6 +106,7 @@ func TestOMAC_Magma_KAT(t *testing.T) {
 	if _, err := mac.Write(pt); err != nil {
 		t.Fatalf("Write: %v", err)
 	}
+
 	got := mac.Sum(nil)
 
 	if !bytes.Equal(got, want) {
@@ -126,10 +130,12 @@ func TestOMAC_SumIdempotent(t *testing.T) {
 	)
 
 	block := gost3412128.NewCipher(key)
+
 	mac, err := NewOMAC(block, 8)
 	if err != nil {
 		t.Fatalf("NewOMAC: %v", err)
 	}
+
 	if _, err := mac.Write(pt); err != nil {
 		t.Fatalf("Write: %v", err)
 	}
@@ -166,28 +172,35 @@ func TestOMAC_SumAfterWrite(t *testing.T) {
 
 	// Incremental: write half1, sum, write half2, sum again.
 	block1 := gost3412128.NewCipher(key)
+
 	macIncr, err := NewOMAC(block1, 8)
 	if err != nil {
 		t.Fatalf("NewOMAC: %v", err)
 	}
+
 	if _, err := macIncr.Write(half1); err != nil {
 		t.Fatalf("Write half1: %v", err)
 	}
-	_ = macIncr.Sum(nil) // first Sum — must not corrupt state
+
+	_ = macIncr.Sum(nil) // first Sum — must not corrupt state.
 	if _, err := macIncr.Write(half2); err != nil {
 		t.Fatalf("Write half2: %v", err)
 	}
+
 	gotIncr := macIncr.Sum(nil)
 
 	// Reference: fresh OMAC over the full input.
 	block2 := gost3412128.NewCipher(key)
+
 	macFull, err := NewOMAC(block2, 8)
 	if err != nil {
 		t.Fatalf("NewOMAC ref: %v", err)
 	}
+
 	if _, err := macFull.Write(full); err != nil {
 		t.Fatalf("Write full: %v", err)
 	}
+
 	wantFull := macFull.Sum(nil)
 
 	if !bytes.Equal(gotIncr, wantFull) {

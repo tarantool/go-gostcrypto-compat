@@ -2,12 +2,13 @@ package gost28147cntparity
 
 import (
 	"bytes"
-	. "github.com/tarantool/go-gostcrypto/gost28147cnt"
 	"math/rand"
 	"os"
 	"os/exec"
 	"runtime"
 	"testing"
+
+	. "github.com/tarantool/go-gostcrypto/gost28147cnt"
 
 	gost "github.com/tarantool/go-gostcrypto-compat"
 	"github.com/tarantool/go-gostcrypto/gost28147"
@@ -47,17 +48,21 @@ func opensslBin() (string, bool) {
 		if _, err := os.Stat(v); err == nil {
 			return v, true
 		}
+
 		return "", false
 	}
+
 	for _, p := range opensslBinCandidates() {
 		if _, err := os.Stat(p); err == nil {
 			return p, true
 		}
 	}
+
 	// Fall back to PATH (covers any distro or custom install).
 	if p, err := exec.LookPath("openssl"); err == nil {
 		return p, true
 	}
+
 	return "", false
 }
 
@@ -65,15 +70,15 @@ func opensslBinCandidates() []string {
 	switch runtime.GOOS {
 	case "darwin":
 		return []string{
-			"/opt/homebrew/opt/openssl@3/bin/openssl", // Homebrew (Apple Silicon)
-			"/usr/local/opt/openssl@3/bin/openssl",    // Homebrew (Intel)
-			"/opt/local/bin/openssl",                  // MacPorts
+			"/opt/homebrew/opt/openssl@3/bin/openssl", // Homebrew (Apple Silicon).
+			"/usr/local/opt/openssl@3/bin/openssl",    // Homebrew (Intel).
+			"/opt/local/bin/openssl",                  // MacPorts.
 		}
 	case "linux":
 		return []string{
 			"/usr/bin/openssl",
 			"/usr/local/bin/openssl",
-			"/usr/local/ssl/bin/openssl", // source-build default prefix
+			"/usr/local/ssl/bin/openssl", // source-build default prefix.
 		}
 	default:
 		return nil
@@ -90,11 +95,13 @@ func gostEngineConf() string {
 	if v := os.Getenv("OPENSSL_CONF"); v != "" {
 		return v
 	}
+
 	for _, p := range gostEngineConfCandidates() {
 		if _, err := os.Stat(p); err == nil {
 			return p
 		}
 	}
+
 	return ""
 }
 
@@ -102,14 +109,14 @@ func gostEngineConfCandidates() []string {
 	switch runtime.GOOS {
 	case "darwin":
 		return []string{
-			"/opt/homebrew/etc/gost/gost-engine.cnf", // Homebrew (Apple Silicon)
-			"/usr/local/etc/gost/gost-engine.cnf",    // Homebrew (Intel)
-			"/opt/local/etc/gost/gost-engine.cnf",    // MacPorts
+			"/opt/homebrew/etc/gost/gost-engine.cnf", // Homebrew (Apple Silicon).
+			"/usr/local/etc/gost/gost-engine.cnf",    // Homebrew (Intel).
+			"/opt/local/etc/gost/gost-engine.cnf",    // MacPorts.
 		}
 	case "linux":
 		return []string{
 			"/etc/ssl/gost.cnf",
-			"/etc/pki/tls/gost.cnf", // Fedora/RHEL layout
+			"/etc/pki/tls/gost.cnf", // Fedora/RHEL layout.
 		}
 	default:
 		return nil
@@ -134,18 +141,23 @@ func isEngineAvailable() (string, bool) {
 	if !ok {
 		return "", false
 	}
+
 	// One block of zeros through the gost engine; success proves it loads.
 	cmd := exec.Command(bin, "enc", "-engine", "gost", "-gost89-cnt",
 		"-K", hexstr(make([]byte, gost28147.KeySize)),
 		"-iv", hexstr(make([]byte, gost28147.BlockSize)), "-nopad")
+
 	cmd.Stdin = bytes.NewReader(make([]byte, gost28147.BlockSize))
+
 	cmd.Env = os.Environ()
 	if conf := gostEngineConf(); conf != "" {
 		cmd.Env = append(cmd.Env, "OPENSSL_CONF="+conf)
 	}
+
 	if out, err := cmd.Output(); err != nil || len(out) < gost28147.BlockSize {
 		return "", false
 	}
+
 	return bin, true
 }
 
@@ -156,31 +168,39 @@ func isEngineAvailable() (string, bool) {
 // isEngineAvailable; any CLI error here is a real failure → t.Fatalf.
 func mustEngineCNT(t *testing.T, bin string, key, iv []byte, n int, tc26 bool) []byte {
 	t.Helper()
+
 	mode := "-gost89-cnt"
 	if tc26 {
 		mode = "-gost89-cnt-12"
 	}
+
 	cmd := exec.Command(bin, "enc", "-engine", "gost", mode,
 		"-K", hexstr(key), "-iv", hexstr(iv), "-nopad")
-	cmd.Stdin = bytes.NewReader(make([]byte, n)) // n zero bytes
+
+	cmd.Stdin = bytes.NewReader(make([]byte, n)) // n zero bytes.
+
 	cmd.Env = os.Environ()
 	if conf := gostEngineConf(); conf != "" {
 		cmd.Env = append(cmd.Env, "OPENSSL_CONF="+conf)
 	}
+
 	res, err := cmd.Output()
 	if err != nil || len(res) < n {
 		t.Fatalf("gost-engine CLI failed (binary exists but command errored): %v", err)
 	}
+
 	return res[:n]
 }
 
 func hexstr(b []byte) string {
 	const hexd = "0123456789abcdef"
+
 	s := make([]byte, len(b)*2)
 	for i, v := range b {
 		s[i*2] = hexd[v>>4]
 		s[i*2+1] = hexd[v&0xF]
 	}
+
 	return string(s)
 }
 
@@ -201,6 +221,7 @@ func TestDiff_GostEngineCLI(t *testing.T) {
 	}
 
 	r := rand.New(rand.NewSource(0x6057C17))
+
 	for _, tc := range []struct {
 		name string
 		sbox gost28147.SBox
@@ -213,15 +234,18 @@ func TestDiff_GostEngineCLI(t *testing.T) {
 			for iter := range 40 {
 				key := make([]byte, gost28147.KeySize)
 				iv := make([]byte, gost28147.BlockSize)
+
 				r.Read(key)
 				r.Read(iv)
+
 				n := r.Intn(1300)
 				if iter%5 == 0 {
-					n = 1024 + r.Intn(48) // straddle first meshing boundary
+					n = 1024 + r.Intn(48) // straddle first meshing boundary.
 				}
+
 				// G89C-02: straddle second meshing boundary (>=2048).
 				if iter%7 == 0 {
-					n = 2048 + r.Intn(100) // straddle second meshing boundary
+					n = 2048 + r.Intn(100) // straddle second meshing boundary.
 				}
 
 				// G89C-01: binary is confirmed available; any failure here is fatal.
@@ -231,15 +255,19 @@ func TestDiff_GostEngineCLI(t *testing.T) {
 				s := NewCNT(gost28147.NewCipher(key, tc.sbox), iv)
 				got := make([]byte, n)
 				zero := make([]byte, n)
+
 				off := 0
 				for off < n {
 					chunk := 1 + r.Intn(13)
 					if off+chunk > n {
 						chunk = n - off
 					}
+
 					s.XORKeyStream(got[off:off+chunk], zero[off:off+chunk])
+
 					off += chunk
 				}
+
 				if !bytes.Equal(got, want) {
 					t.Fatalf("iter=%d key=%x iv=%x n=%d\n got=%x\nwant=%x",
 						iter, key, iv, n, got, want)
@@ -276,11 +304,12 @@ func TestDiff_InternalGostOracle(t *testing.T) {
 		cleanBox gost28147.SBox
 		gogotBox *gogost28147.Sbox
 	}
+
 	cases := []sboxCase{
 		{
 			"CryptoPro-A",
 			gost28147.SboxCryptoProA,
-			gogost28147.SboxDefault, // SboxDefault == &SboxIdGost2814789CryptoProAParamSet
+			gogost28147.SboxDefault, // SboxDefault == &SboxIdGost2814789CryptoProAParamSet.
 		},
 		// G89C-03: tc26-Z always-on anchor via direct gogost oracle.
 		{
@@ -292,9 +321,9 @@ func TestDiff_InternalGostOracle(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			r2 := rand.New(rand.NewSource(0xC0FFEE)) // same seed per S-box for reproducibility
+			r2 := rand.New(rand.NewSource(0xC0FFEE)) // same seed per S-box for reproducibility.
 			for iter := range 200 {
-				n := r2.Intn(oracleMeshingFreeLimit) // < 1024: oracle meshing-free here
+				n := r2.Intn(oracleMeshingFreeLimit) // < 1024: oracle meshing-free here.
 				pt := make([]byte, n)
 				r2.Read(pt)
 
@@ -302,20 +331,24 @@ func TestDiff_InternalGostOracle(t *testing.T) {
 				gogostCipher := gogost28147.NewCipher(key, tc.gogotBox)
 				gogostCTR := gogostCipher.NewCTR(iv)
 				want := make([]byte, n)
-				gogostCTR.XORKeyStream(want, pt) // ONE call only (D4)
+				gogostCTR.XORKeyStream(want, pt) // ONE call only (D4).
 
 				// Drive clean-room through random non-block-aligned chunk splits.
 				s := NewCNT(gost28147.NewCipher(key, tc.cleanBox), iv)
 				got := make([]byte, n)
+
 				off := 0
 				for off < n {
 					chunk := 1 + r.Intn(13)
 					if off+chunk > n {
 						chunk = n - off
 					}
+
 					s.XORKeyStream(got[off:off+chunk], pt[off:off+chunk])
+
 					off += chunk
 				}
+
 				if !bytes.Equal(got, want) {
 					t.Fatalf("sbox=%s iter=%d n=%d\n got=%x\nwant=%x",
 						tc.name, iter, n, got, want)
@@ -323,7 +356,6 @@ func TestDiff_InternalGostOracle(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 // FuzzDiff_InternalGostOracle mirrors TestDiff_InternalGostOracle: it feeds the
@@ -338,13 +370,13 @@ func TestDiff_InternalGostOracle(t *testing.T) {
 // tc26-Z. Each S-box is seeded explicitly so seed replay exercises both.
 // The gogost oracle is built directly (not via the facade) for tc26-Z.
 func FuzzDiff_InternalGostOracle(f *testing.F) {
-	// sboxSel: even=CryptoPro-A, odd=tc26-Z
-	f.Add([]byte("the quick brown fox"), uint8(7), uint8(0))               // CryptoPro-A
-	f.Add(make([]byte, 512), uint8(13), uint8(0))                          // CryptoPro-A
-	f.Add(seedHex("00112233445566778899aabbccddeeff"), uint8(1), uint8(0)) // CryptoPro-A
-	f.Add([]byte("the quick brown fox"), uint8(7), uint8(1))               // tc26-Z
-	f.Add(make([]byte, 512), uint8(13), uint8(1))                          // tc26-Z
-	f.Add(seedHex("00112233445566778899aabbccddeeff"), uint8(1), uint8(1)) // tc26-Z
+	// sboxSel: even=CryptoPro-A, odd=tc26-Z.
+	f.Add([]byte("the quick brown fox"), uint8(7), uint8(0))               // CryptoPro-A.
+	f.Add(make([]byte, 512), uint8(13), uint8(0))                          // CryptoPro-A.
+	f.Add(seedHex("00112233445566778899aabbccddeeff"), uint8(1), uint8(0)) // CryptoPro-A.
+	f.Add([]byte("the quick brown fox"), uint8(7), uint8(1))               // tc26-Z.
+	f.Add(make([]byte, 512), uint8(13), uint8(1))                          // tc26-Z.
+	f.Add(seedHex("00112233445566778899aabbccddeeff"), uint8(1), uint8(1)) // tc26-Z.
 
 	f.Fuzz(func(t *testing.T, pt []byte, chunkSeed uint8, sboxSel uint8) {
 		// Hold the oracle in its valid regime: zero key, zero IV, n < 1024.
@@ -354,11 +386,15 @@ func FuzzDiff_InternalGostOracle(f *testing.F) {
 		if len(pt) >= oracleMeshingFreeLimit {
 			pt = pt[:oracleMeshingFreeLimit-1]
 		}
+
 		n := len(pt)
 
 		// Select S-box pair: even=CryptoPro-A, odd=tc26-Z.
-		var cleanBox gost28147.SBox
-		var gogotBox *gogost28147.Sbox
+		var (
+			cleanBox gost28147.SBox
+			gogotBox *gogost28147.Sbox
+		)
+
 		if sboxSel%2 == 0 {
 			cleanBox = gost28147.SboxCryptoProA
 			gogotBox = gogost28147.SboxDefault
@@ -378,16 +414,21 @@ func FuzzDiff_InternalGostOracle(f *testing.F) {
 		s := NewCNT(gost28147.NewCipher(key, cleanBox), iv)
 		got := make([]byte, n)
 		off := 0
+
 		step := chunkSeed
 		for off < n {
 			chunk := 1 + int(step%13)
 			if off+chunk > n {
 				chunk = n - off
 			}
+
 			s.XORKeyStream(got[off:off+chunk], pt[off:off+chunk])
+
 			off += chunk
-			step = step*31 + 7 // vary chunk sizes deterministically
+
+			step = step*31 + 7 // vary chunk sizes deterministically.
 		}
+
 		if !bytes.Equal(got, want) {
 			t.Fatalf("sbox=%d n=%d\n got=%x\nwant=%x", sboxSel%2, n, got, want)
 		}
@@ -404,12 +445,14 @@ func TestDiff_OracleLacksMeshing(t *testing.T) {
 	key := make([]byte, gost28147.KeySize)
 	iv := make([]byte, gost28147.BlockSize)
 	sbox := gost28147.SboxCryptoProA
+
 	const n = 1040
 
 	ref, err := gost.NewGOST28147_CNT(key, iv)
 	if err != nil {
 		t.Fatalf("oracle ctor: %v", err)
 	}
+
 	oracle := make([]byte, n)
 	ref.XORKeyStream(oracle, make([]byte, n))
 
@@ -419,10 +462,12 @@ func TestDiff_OracleLacksMeshing(t *testing.T) {
 	if !bytes.Equal(mine[:1024], oracle[:1024]) {
 		t.Fatalf("clean-room and oracle disagree before the meshing boundary")
 	}
+
 	if bytes.Equal(mine[1024:1032], oracle[1024:1032]) {
 		t.Fatalf("expected divergence at the meshing boundary, got agreement")
 	}
-	want := mustHex(t, "56f45eab8381b608") // pinned engine post-mesh (CryptoPro-A)
+
+	want := mustHex(t, "56f45eab8381b608") // pinned engine post-mesh (CryptoPro-A).
 	if !bytes.Equal(mine[1024:1032], want) {
 		t.Fatalf("post-mesh [1024:1032] = %x, want pinned engine %x", mine[1024:1032], want)
 	}

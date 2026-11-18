@@ -12,28 +12,34 @@ import (
 
 func mustHexMode(t *testing.T, s string) []byte {
 	t.Helper()
+
 	b, err := hex.DecodeString(s)
 	if err != nil {
 		t.Fatalf("hex.DecodeString(%q): %v", s, err)
 	}
+
 	return b
 }
 
 func ecbEncrypt(block cipher.Block, pt []byte) []byte {
 	out := make([]byte, len(pt))
+
 	bs := block.BlockSize()
 	for i := 0; i < len(pt); i += bs {
 		block.Encrypt(out[i:i+bs], pt[i:i+bs])
 	}
+
 	return out
 }
 
 func ecbDecrypt(block cipher.Block, ct []byte) []byte {
 	out := make([]byte, len(ct))
+
 	bs := block.BlockSize()
 	for i := 0; i < len(ct); i += bs {
 		block.Decrypt(out[i:i+bs], ct[i:i+bs])
 	}
+
 	return out
 }
 
@@ -43,6 +49,7 @@ func xorKeyStreamByChunks(s cipher.Stream, src []byte, chunk int) []byte {
 		end := min(off+chunk, len(src))
 		s.XORKeyStream(out[off:end], src[off:end])
 	}
+
 	return out
 }
 
@@ -72,6 +79,7 @@ func TestCipherModes_EngineVectors(t *testing.T) {
 
 	ivCTRKuz := make([]byte, 16)
 	copy(ivCTRKuz, mustHexMode(t, "1234567890abcef0"))
+
 	iv128 := mustHexMode(t, "1234567890abcef0a1b2c3d4e5f00112")
 	ivMagCBC := mustHexMode(t, "1234567890abcdef")
 	ivACPKMMaster := make([]byte, 16)
@@ -84,10 +92,12 @@ func TestCipherModes_EngineVectors(t *testing.T) {
 				"b429912c6e0032f9285452d76718d08b"+
 				"f0ca33549d247ceef3f5a5313bd4b157"+
 				"d0b09ccde830b9eb3a02c4c5aa8ada98")
+
 		got := ecbEncrypt(block, plainKuz)
 		if !bytes.Equal(got, want) {
 			t.Fatalf("ECB encrypt mismatch:\n got  %x\n want %x", got, want)
 		}
+
 		if dec := ecbDecrypt(block, got); !bytes.Equal(dec, plainKuz) {
 			t.Fatalf("ECB decrypt mismatch:\n got  %x\n want %x", dec, plainKuz)
 		}
@@ -100,10 +110,12 @@ func TestCipherModes_EngineVectors(t *testing.T) {
 				"779146db2d93a94ed93cf68b32397f19"+
 				"e93c9e57441d870545f24036a58ceea3"+
 				"cf3f0061d56423545b960d864cc868da")
+
 		got := xorKeyStreamByChunks(cipher.NewOFB(block, iv128), plainKuz, len(plainKuz))
 		if !bytes.Equal(got, want) {
 			t.Fatalf("OFB encrypt mismatch:\n got  %x\n want %x", got, want)
 		}
+
 		gotChunked := xorKeyStreamByChunks(cipher.NewOFB(gost3412128.NewCipher(keyKuz), iv128), plainKuz, 16)
 		if !bytes.Equal(gotChunked, want) {
 			t.Fatalf("OFB chunked mismatch:\n got  %x\n want %x", gotChunked, want)
@@ -119,11 +131,14 @@ func TestCipherModes_EngineVectors(t *testing.T) {
 				"e01108ff8d9d3a6d8ca2a533fa614e71")
 		got := make([]byte, len(plainKuz))
 		cipher.NewCBCEncrypter(block, iv128).CryptBlocks(got, plainKuz)
+
 		if !bytes.Equal(got, want) {
 			t.Fatalf("CBC encrypt mismatch:\n got  %x\n want %x", got, want)
 		}
+
 		dec := make([]byte, len(got))
 		cipher.NewCBCDecrypter(gost3412128.NewCipher(keyKuz), iv128).CryptBlocks(dec, got)
+
 		if !bytes.Equal(dec, plainKuz) {
 			t.Fatalf("CBC decrypt mismatch:\n got  %x\n want %x", dec, plainKuz)
 		}
@@ -136,10 +151,12 @@ func TestCipherModes_EngineVectors(t *testing.T) {
 				"68c1b99c4df59cc7951e3739b5b3cdbf"+
 				"073f4dd2d6deb3cfb026545f7af1d8e8"+
 				"e1c852e9a8567162dbb5da7f66dea926")
+
 		got := xorKeyStreamByChunks(cipher.NewCFBEncrypter(block, iv128), plainKuz, len(plainKuz))
 		if !bytes.Equal(got, want) {
 			t.Fatalf("CFB encrypt mismatch:\n got  %x\n want %x", got, want)
 		}
+
 		dec := xorKeyStreamByChunks(cipher.NewCFBDecrypter(gost3412128.NewCipher(keyKuz), iv128), got, 16)
 		if !bytes.Equal(dec, plainKuz) {
 			t.Fatalf("CFB decrypt mismatch:\n got  %x\n want %x", dec, plainKuz)
@@ -149,6 +166,7 @@ func TestCipherModes_EngineVectors(t *testing.T) {
 	t.Run("Kuznyechik-CTR-ACPKM-32", func(t *testing.T) {
 		iv := make([]byte, 16)
 		copy(iv, mustHexMode(t, "1234567890abcef0"))
+
 		want := mustHexMode(t,
 			"f195d8bec10ed1dbd57b5fa240bda1b8"+
 				"85eee733f6a13e5df33ce4b33c45dee4"+
@@ -157,12 +175,15 @@ func TestCipherModes_EngineVectors(t *testing.T) {
 				"cf30f57686aeece11cfc6c316b8a896e"+
 				"dffd07ec813636460c4f3b743423163e"+
 				"6409a9c282fac8d469d221e7fbd6de5d")
+
 		ctr, err := NewCTRACPKM(func(k []byte) cipher.Block { return gost3412128.NewCipher(k) }, keyKuz, iv, 32)
 		if err != nil {
 			t.Fatalf("NewCTRACPKM: %v", err)
 		}
+
 		got := make([]byte, len(plainACPKM))
 		ctr.XORKeyStream(got, plainACPKM)
+
 		if !bytes.Equal(got, want) {
 			t.Fatalf("CTR-ACPKM mismatch:\n got  %x\n want %x", got, want)
 		}
@@ -179,12 +200,15 @@ func TestCipherModes_EngineVectors(t *testing.T) {
 				"d7d6271501b177775263c2a3495a8318"+
 				"a81c79a04f29660ea3fda874c630799e"+
 				"142c577914fea90d3bc2502e833685d9")
+
 		ctr, err := NewCTRACPKM(func(k []byte) cipher.Block { return gost3412128.NewCipher(k) }, keyKuz, ivACPKMMaster, 96)
 		if err != nil {
 			t.Fatalf("NewCTRACPKM: %v", err)
 		}
+
 		got := make([]byte, len(plainACPKMMaster))
 		ctr.XORKeyStream(got, plainACPKMMaster)
+
 		if !bytes.Equal(got, want) {
 			t.Fatalf("CTR-ACPKM master mismatch:\n got  %x\n want %x", got, want)
 		}
@@ -197,11 +221,14 @@ func TestCipherModes_EngineVectors(t *testing.T) {
 				"6183e2cca976a4babe9ce87d6fa73cf2")
 		got := make([]byte, len(plainMag))
 		cipher.NewCBCEncrypter(block, ivMagCBC).CryptBlocks(got, plainMag)
+
 		if !bytes.Equal(got, want) {
 			t.Fatalf("Magma CBC encrypt mismatch:\n got  %x\n want %x", got, want)
 		}
+
 		dec := make([]byte, len(got))
 		cipher.NewCBCDecrypter(gost341264.NewCipher(keyMag), ivMagCBC).CryptBlocks(dec, got)
+
 		if !bytes.Equal(dec, plainMag) {
 			t.Fatalf("Magma CBC decrypt mismatch:\n got  %x\n want %x", dec, plainMag)
 		}

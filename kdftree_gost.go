@@ -26,11 +26,13 @@ func KDFTree2012_256(key, label, seed []byte, keyOutLen int) []byte {
 	if keyOutLen <= 0 || keyOutLen%32 != 0 {
 		panic("gost.KDFTree2012_256: keyOutLen must be a positive multiple of 32")
 	}
+
 	if keyOutLen > 0xFFFF/8 {
 		panic("gost.KDFTree2012_256: keyOutLen too large for 2-byte length encoding")
 	}
 
 	out := make([]byte, keyOutLen)
+
 	var lenBE [2]byte
 	binary.BigEndian.PutUint16(lenBE[:], uint16(keyOutLen*8))
 
@@ -44,5 +46,6 @@ func KDFTree2012_256(key, label, seed []byte, keyOutLen int) []byte {
 		h.Write(lenBE[:])
 		copy(out[(i-1)*32:i*32], h.Sum(nil))
 	}
+
 	return out
 }

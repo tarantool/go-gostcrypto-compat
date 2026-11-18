@@ -12,10 +12,12 @@ import (
 
 func mustHex(t *testing.T, s string) []byte {
 	t.Helper()
+
 	b, err := hex.DecodeString(s)
 	if err != nil {
 		t.Fatalf("bad hex %q: %v", s, err)
 	}
+
 	return b
 }
 
@@ -28,8 +30,10 @@ func testParamSetCurve() *curves.Curve {
 		if !ok {
 			panic("bad hex: " + s)
 		}
+
 		return n
 	}
+
 	return &curves.Curve{
 		P:    mustInt("8000000000000000000000000000000000000000000000000000000000000431"),
 		A:    mustInt("0000000000000000000000000000000000000000000000000000000000000007"),
@@ -54,8 +58,10 @@ func stdParamSet512Curve() *curves.Curve {
 		if !ok {
 			panic("bad hex: " + s)
 		}
+
 		return n
 	}
+
 	return &curves.Curve{
 		P: mustInt("4531ACD1FE0023C7550D267B6B2FEE80922B14B2FFB90F04D4EB7C09B5D2D15D" +
 			"F1D852741AF4704A0458047E80E4546D35B8336FAC224DD81664BBF528BE6373"),
@@ -88,20 +94,24 @@ var oidTc26_512A = asn1.ObjectIdentifier{1, 2, 643, 7, 1, 2, 1, 2, 1}
 // 1.2.643.7.1.2.1.2.1) curve as a facade *Curve for random cross-verify tests.
 func refCurve512A(t *testing.T) *gost.Curve {
 	t.Helper()
+
 	c, err := gost.CurveByOID(oidTc26_512A)
 	if err != nil {
 		t.Fatalf("refCurve512A: CurveByOID: %v", err)
 	}
+
 	return c
 }
 
 // cleanroomCurve512A returns the clean-room side of the tc26-512-A curve.
 func cleanroomCurve512A(t *testing.T) *curves.Curve {
 	t.Helper()
+
 	c, err := curves.CurveByOID("1.2.643.7.1.2.1.2.1")
 	if err != nil {
 		t.Fatalf("cleanroomCurve512A: CurveByOID: %v", err)
 	}
+
 	return c
 }
 
@@ -119,9 +129,11 @@ var q256, _ = new(big.Int).SetString(
 func effectiveE256(dig []byte) *big.Int {
 	e := new(big.Int).SetBytes(dig)
 	e.Mod(e, q256)
+
 	if e.Sign() == 0 {
 		e.SetInt64(1)
 	}
+
 	return e
 }
 

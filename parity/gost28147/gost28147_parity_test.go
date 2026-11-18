@@ -17,23 +17,29 @@ func TestDiff_InternalGostOracle(t *testing.T) {
 	keys := [][]byte{
 		mustHex(t, "00112233445566778899aabbccddeeff102132435465768798a9bacbdcedf0e1"),
 	}
+
 	for seed := range 64 {
 		var k [KeySize]byte
+
 		x := uint64(seed)*0x9E3779B97F4A7C15 + 0xABCDEF
 		for i := range k {
 			k[i] = byte(x>>(8*(i%8))) ^ byte(i*31)
 		}
+
 		keys = append(keys, k[:])
 	}
 
 	for ki, key := range keys {
 		c := NewCipher(key, SboxCryptoProA)
+
 		for seed := range 64 {
 			var p [BlockSize]byte
+
 			x := uint64(seed)*0x100000001B3 + uint64(ki)*0x9E3779B1
 			for i := range BlockSize {
 				p[i] = byte(x >> (8 * i))
 			}
+
 			want, err := gost.GOST2814789Encrypt(key, p[:])
 			if err != nil {
 				t.Fatalf("GOST2814789Encrypt key#%d: %v", ki, err)
@@ -41,6 +47,7 @@ func TestDiff_InternalGostOracle(t *testing.T) {
 
 			got := make([]byte, BlockSize)
 			c.Encrypt(got, p[:])
+
 			if !bytes.Equal(got, want) {
 				t.Fatalf("key#%d in=%x: clean-room %x != oracle %x", ki, p, got, want)
 			}
@@ -56,9 +63,11 @@ func TestDiff_InternalGostOracle(t *testing.T) {
 			if err != nil {
 				t.Fatalf("GOST2814789Decrypt key#%d: %v", ki, err)
 			}
+
 			if !bytes.Equal(minePT, refPT) {
 				t.Fatalf("Decrypt mismatch key#%d ct=%x: clean-room %x != oracle %x", ki, want, minePT, refPT)
 			}
+
 			// Sanity: clean-room round-trip must recover p.
 			if !bytes.Equal(minePT, p[:]) {
 				t.Fatalf("round-trip Decrypt(Encrypt(p)) != p key#%d", ki)
@@ -83,12 +92,15 @@ func TestDiff_TC26Z_ECB(t *testing.T) {
 		// Pinned KAT key from TestDiff_InternalGostOracle.
 		mustHex(t, "00112233445566778899aabbccddeeff102132435465768798a9bacbdcedf0e1"),
 	}
+
 	for seed := range 64 {
 		var k [KeySize]byte
+
 		x := uint64(seed)*0x6C62272E07BB0142 + 0xFEDCBA98
 		for i := range k {
 			k[i] = byte(x>>(8*(i%8))) ^ byte(i*37)
 		}
+
 		keys = append(keys, k[:])
 	}
 
@@ -100,6 +112,7 @@ func TestDiff_TC26Z_ECB(t *testing.T) {
 
 		for seed := range 64 {
 			var p [BlockSize]byte
+
 			x := uint64(seed)*0x100000001B3 + uint64(ki)*0xDEADBEEF
 			for i := range BlockSize {
 				p[i] = byte(x >> (8 * i))
@@ -108,8 +121,10 @@ func TestDiff_TC26Z_ECB(t *testing.T) {
 			// Encrypt diff.
 			gotMine := make([]byte, BlockSize)
 			gotRef := make([]byte, BlockSize)
+
 			mine.Encrypt(gotMine, p[:])
 			ref.Encrypt(gotRef, p[:])
+
 			if !bytes.Equal(gotMine, gotRef) {
 				t.Fatalf("TC26Z Encrypt mismatch key#%d in=%x: clean-room %x != gogost %x",
 					ki, p, gotMine, gotRef)
@@ -118,16 +133,20 @@ func TestDiff_TC26Z_ECB(t *testing.T) {
 			// Decrypt diff on the freshly encrypted ciphertext.
 			decMine := make([]byte, BlockSize)
 			decRef := make([]byte, BlockSize)
+
 			mine.Decrypt(decMine, gotMine)
 			ref.Decrypt(decRef, gotRef)
+
 			if !bytes.Equal(decMine, decRef) {
 				t.Fatalf("TC26Z Decrypt mismatch key#%d ct=%x: clean-room %x != gogost %x",
 					ki, gotMine, decMine, decRef)
 			}
+
 			// Sanity: round-trip must recover p on both sides.
 			if !bytes.Equal(decMine, p[:]) {
 				t.Fatalf("TC26Z round-trip key#%d: clean-room Decrypt(Encrypt(p)) != p", ki)
 			}
+
 			if !bytes.Equal(decRef, p[:]) {
 				t.Fatalf("TC26Z round-trip key#%d: gogost Decrypt(Encrypt(p)) != p", ki)
 			}
@@ -181,6 +200,7 @@ func FuzzDiffGost28147(f *testing.F) {
 				if err != nil {
 					t.Fatalf("GOST2814789Encrypt: %v", err)
 				}
+
 				return v
 			}
 			oracleDec = func(blk []byte) []byte {
@@ -188,26 +208,32 @@ func FuzzDiffGost28147(f *testing.F) {
 				if err != nil {
 					t.Fatalf("GOST2814789Decrypt: %v", err)
 				}
+
 				return v
 			}
 		} else {
 			// TC26-Z: drive gogost directly (facade hardcodes CryptoPro-A).
 			c = NewCipher(key, SboxTC26Z)
+
 			ref := gogost28147.NewCipher(key, &gogost28147.SboxIdtc26gost28147paramZ)
+
 			oracleEnc = func(blk []byte) []byte {
 				dst := make([]byte, BlockSize)
 				ref.Encrypt(dst, blk)
+
 				return dst
 			}
 			oracleDec = func(blk []byte) []byte {
 				dst := make([]byte, BlockSize)
 				ref.Decrypt(dst, blk)
+
 				return dst
 			}
 		}
 
 		got := make([]byte, BlockSize)
 		c.Encrypt(got, p)
+
 		want := oracleEnc(p)
 		if !bytes.Equal(got, want) {
 			t.Fatalf("Encrypt mismatch (sbox=%d): key=%x in=%x clean-room %x != oracle %x",
@@ -217,6 +243,7 @@ func FuzzDiffGost28147(f *testing.F) {
 		// Decrypt diff on an arbitrary block (fuzzer-supplied ciphertext).
 		minePT := make([]byte, BlockSize)
 		c.Decrypt(minePT, p)
+
 		refPT := oracleDec(p)
 		if !bytes.Equal(minePT, refPT) {
 			t.Fatalf("Decrypt mismatch (sbox=%d): key=%x in=%x clean-room %x != oracle %x",
@@ -226,6 +253,7 @@ func FuzzDiffGost28147(f *testing.F) {
 		// Round-trip on the clean-room side.
 		back := make([]byte, BlockSize)
 		c.Decrypt(back, got)
+
 		if !bytes.Equal(back, p) {
 			t.Fatalf("round-trip Decrypt(Encrypt) != p (sbox=%d): key=%x p=%x got=%x",
 				sboxSel%2, key, p, back)

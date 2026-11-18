@@ -32,6 +32,7 @@ func pick(name string) (Sbox, *gost.Sbox) {
 	case "cryptopro-a":
 		return SboxCryptoProA, gost.SboxCryptoProA
 	}
+
 	panic("unknown sbox " + name)
 }
 
@@ -46,7 +47,7 @@ func TestKeyWrapCryptoPro_Differential(t *testing.T) {
 	cases := []struct {
 		name, sbox    string
 		kek, ukm, cek []byte
-		wantPinned    []byte // independent gost-engine KAT; nil when inputs aren't the canonical KAT inputs
+		wantPinned    []byte // independent gost-engine KAT; nil when inputs aren't the canonical KAT inputs.
 	}{
 		{
 			name:       "tc26z-kat",
@@ -88,14 +89,17 @@ func TestKeyWrapCryptoPro_Differential(t *testing.T) {
 			if err != nil {
 				t.Fatalf("clean-room KeyWrapCryptoPro: %v", err)
 			}
+
 			gotRepo, err := gost.KeyWrapCryptoPro(repoSbox, tc.kek, tc.ukm, tc.cek)
 			if err != nil {
 				t.Fatalf("oracle KeyWrapCryptoPro: %v", err)
 			}
+
 			if !bytes.Equal(gotNew, gotRepo) {
 				t.Fatalf("clean-room vs oracle mismatch (sbox=%s)\n new: %x\nrepo: %x",
 					tc.sbox, gotNew, gotRepo)
 			}
+
 			if tc.wantPinned != nil && !bytes.Equal(gotNew, tc.wantPinned) {
 				t.Fatalf("engine KAT mismatch (sbox=%s)\n got: %x\nwant: %x",
 					tc.sbox, gotNew, tc.wantPinned)
@@ -107,10 +111,12 @@ func TestKeyWrapCryptoPro_Differential(t *testing.T) {
 			// its kek argument, so the round-trip must see a copy.
 			if tc.sbox == "cryptopro-a" {
 				kekCopy := append([]byte(nil), tc.kek...)
+
 				got := gogostwrap.UnwrapCryptoPro(kekCopy, gotNew)
 				if got == nil {
 					t.Fatalf("gogost UnwrapCryptoPro returned nil (MAC mismatch / bad wrap)")
 				}
+
 				if !bytes.Equal(got, tc.cek) {
 					t.Fatalf("gogost round-trip mismatch (sbox=cryptopro-a)\n got: %x\nwant: %x",
 						got, tc.cek)
@@ -150,6 +156,7 @@ func TestDiversify_Differential(t *testing.T) {
 		t.Run("cryptopro-a/"+in.name, func(t *testing.T) {
 			kek, ukm := mh(in.kek), mh(in.ukm)
 			got := Diversify(SboxCryptoProA, kek, ukm)
+
 			want := gogostwrap.DiversifyCryptoPro(append([]byte(nil), kek...), ukm)
 			if !bytes.Equal(got, want) {
 				t.Fatalf("Diversify vs gogost.DiversifyCryptoPro mismatch (%s)\n got: %x\ngogost: %x",
@@ -187,13 +194,16 @@ func TestKeyWrapCryptoPro_ErrorParity(t *testing.T) {
 				if errNew == nil {
 					t.Fatalf("clean-room: expected error for %s, got nil (out=%x)", tc.name, outNew)
 				}
+
 				if outNew != nil {
 					t.Fatalf("clean-room: expected nil output on error, got %x", outNew)
 				}
+
 				outRepo, errRepo := gost.KeyWrapCryptoPro(repoSbox, tc.kek, tc.ukm, tc.cek)
 				if errRepo == nil {
 					t.Fatalf("oracle: expected error for %s, got nil (out=%x)", tc.name, outRepo)
 				}
+
 				if outRepo != nil {
 					t.Fatalf("oracle: expected nil output on error, got %x", outRepo)
 				}
@@ -213,19 +223,21 @@ func FuzzKeyWrapCryptoPro_Differential(f *testing.F) {
 	// useTC26Z selects the S-box; raw is normalized into 32|8|32 = 72 bytes.
 	f.Add(true, kat)
 	f.Add(false, kat)
-	f.Add(true, make([]byte, 72))                       // all-zero, tc26-z
-	f.Add(false, make([]byte, 72))                      // all-zero, cryptopro-a
-	f.Add(true, bytes.Repeat([]byte{0xFF}, 72))         // all-0xFF, tc26-z
-	f.Add(false, bytes.Repeat([]byte{0xFF}, 72))        // all-0xFF, cryptopro-a
-	f.Add(false, append(seed(katKEK), seed(katUKM)...)) // short raw -> zero-padded cek
+	f.Add(true, make([]byte, 72))                       // all-zero, tc26-z.
+	f.Add(false, make([]byte, 72))                      // all-zero, cryptopro-a.
+	f.Add(true, bytes.Repeat([]byte{0xFF}, 72))         // all-0xFF, tc26-z.
+	f.Add(false, bytes.Repeat([]byte{0xFF}, 72))        // all-0xFF, cryptopro-a.
+	f.Add(false, append(seed(katKEK), seed(katUKM)...)) // short raw -> zero-padded cek.
 
 	f.Fuzz(func(t *testing.T, useTC26Z bool, raw []byte) {
 		sbox := "cryptopro-a"
 		if useTC26Z {
 			sbox = "tc26-z"
 		}
+
 		buf := make([]byte, 72)
 		copy(buf, raw)
+
 		k, u, c := buf[0:32], buf[32:40], buf[40:72]
 
 		newSbox, repoSbox := pick(sbox)
@@ -234,10 +246,12 @@ func FuzzKeyWrapCryptoPro_Differential(f *testing.F) {
 		if err != nil {
 			t.Fatalf("clean-room KeyWrapCryptoPro: %v", err)
 		}
+
 		gotRepo, err := gost.KeyWrapCryptoPro(repoSbox, k, u, c)
 		if err != nil {
 			t.Fatalf("oracle KeyWrapCryptoPro: %v", err)
 		}
+
 		if !bytes.Equal(gotNew, gotRepo) {
 			t.Fatalf("wrap mismatch (sbox=%s)\n kek=%x ukm=%x cek=%x\n new=%x\nrepo=%x",
 				sbox, k, u, c, gotNew, gotRepo)
@@ -247,15 +261,18 @@ func FuzzKeyWrapCryptoPro_Differential(f *testing.F) {
 		if !useTC26Z {
 			// DiversifyCryptoPro mutates its kek arg in place: pass a copy.
 			gotDiv := Diversify(newSbox, k, u)
+
 			wantDiv := gogostwrap.DiversifyCryptoPro(append([]byte(nil), k...), u)
 			if !bytes.Equal(gotDiv, wantDiv) {
 				t.Fatalf("Diversify mismatch (cryptopro-a)\n new=%x\ngogost=%x", gotDiv, wantDiv)
 			}
+
 			// Round-trip the clean-room wrap through gogost's own unwrap.
 			cek := gogostwrap.UnwrapCryptoPro(append([]byte(nil), k...), gotNew)
 			if cek == nil {
 				t.Fatalf("gogost UnwrapCryptoPro returned nil (kek=%x ukm=%x cek=%x)", k, u, c)
 			}
+
 			if !bytes.Equal(cek, c) {
 				t.Fatalf("gogost round-trip mismatch (cryptopro-a)\n got=%x\nwant=%x", cek, c)
 			}

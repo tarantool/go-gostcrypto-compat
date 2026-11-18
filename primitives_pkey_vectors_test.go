@@ -103,12 +103,15 @@ func TestGost_R342001_Verify_RFC7091(t *testing.T) {
 	if err != nil {
 		t.Fatalf("prvRaw decode: %v", err)
 	}
+
 	digest, err := hex.DecodeString("2dfbc1b372d89a1188c09c52e0eec61fce52032ab1022e8e67ece6672b043ee5")
 	if err != nil {
 		t.Fatalf("digest decode: %v", err)
 	}
+
 	// Reference signature from RFC 7091 §A.1.
 	sigHex := "01456c64ba4642a1653c235a98a60249bcd6d3f746b631df928014f6c5bf9c4041aa28d2f1ab148280cd9ed56feda41974053554a42767b83ad043fd39dc0493"
+
 	sig, err := hex.DecodeString(sigHex)
 	if err != nil {
 		t.Fatalf("sig decode: %v", err)
@@ -116,10 +119,12 @@ func TestGost_R342001_Verify_RFC7091(t *testing.T) {
 
 	// Use TestParamSet curve (RFC 7091 §A.1, same as gost-engine TestParamSet keys).
 	c := gost3410.CurveIdGostR34102001TestParamSet()
+
 	prv, err := gost3410.NewPrivateKey(c, prvRaw)
 	if err != nil {
 		t.Fatalf("NewPrivateKey: %v", err)
 	}
+
 	pub, err := prv.PublicKey()
 	if err != nil {
 		t.Fatalf("PublicKey: %v", err)
@@ -129,9 +134,11 @@ func TestGost_R342001_Verify_RFC7091(t *testing.T) {
 	pubRaw := pub.Raw()
 	pubXwant, _ := hex.DecodeString("0bd86fe5d8db89668f789b4e1dba8585c5508b45ec5b59d8906ddb70e2492b7f")
 	pubYwant, _ := hex.DecodeString("da77ff871a10fbdf2766d293c5d164afbb3c7b973a41c885d11d70d689b4f126")
+
 	if !bytes.Equal(pubRaw[:32], pubXwant) {
 		t.Fatalf("pubX mismatch:\ngot  %x\nwant %x", pubRaw[:32], pubXwant)
 	}
+
 	if !bytes.Equal(pubRaw[32:], pubYwant) {
 		t.Fatalf("pubY mismatch:\ngot  %x\nwant %x", pubRaw[32:], pubYwant)
 	}
@@ -141,6 +148,7 @@ func TestGost_R342001_Verify_RFC7091(t *testing.T) {
 	if err != nil {
 		t.Fatalf("VerifyDigest (RFC sig): %v", err)
 	}
+
 	if !ok {
 		t.Fatal("VerifyDigest: RFC 7091 signature not valid")
 	}
@@ -151,10 +159,12 @@ func TestGost_R342001_Verify_RFC7091(t *testing.T) {
 	if err != nil {
 		t.Fatalf("R341012Sign: %v", err)
 	}
+
 	ok2, err := pub.VerifyDigest(digest, ourSig)
 	if err != nil {
 		t.Fatalf("VerifyDigest (our sig): %v", err)
 	}
+
 	if !ok2 {
 		t.Fatal("R341012Sign/VerifyDigest round-trip failed")
 	}
@@ -162,7 +172,9 @@ func TestGost_R342001_Verify_RFC7091(t *testing.T) {
 	// Tampered digest must not verify.
 	tampered := make([]byte, len(digest))
 	copy(tampered, digest)
+
 	tampered[0] ^= 0xFF
+
 	ok3, _ := pub.VerifyDigest(tampered, ourSig)
 	if ok3 {
 		t.Fatal("VerifyDigest accepted tampered digest")

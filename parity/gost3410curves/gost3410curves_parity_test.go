@@ -16,15 +16,19 @@ import (
 // oidToASN1 parses a dotted-decimal OID string into an asn1.ObjectIdentifier.
 func oidToASN1(t *testing.T, s string) asn1.ObjectIdentifier {
 	t.Helper()
+
 	parts := strings.Split(s, ".")
+
 	oid := make(asn1.ObjectIdentifier, len(parts))
 	for i, p := range parts {
 		n := 0
 		for _, ch := range p {
 			n = n*10 + int(ch-'0')
 		}
+
 		oid[i] = n
 	}
+
 	return oid
 }
 
@@ -34,6 +38,7 @@ func oidToASN1(t *testing.T, s string) asn1.ObjectIdentifier {
 // Name() and PointSize().
 func mustGogostCurve(t *testing.T, oidStr string) *gogostcurve.Curve {
 	t.Helper()
+
 	switch oidStr {
 	case "1.2.643.2.2.35.1":
 		return gogostcurve.CurveIdGostR34102001CryptoProAParamSet()
@@ -56,13 +61,16 @@ func mustGogostCurve(t *testing.T, oidStr string) *gogostcurve.Curve {
 	case "1.2.643.7.1.2.1.2.3":
 		return gogostcurve.CurveIdtc26gost341012512paramSetC()
 	}
+
 	t.Fatalf("mustGogostCurve: unknown OID %q", oidStr)
+
 	return nil
 }
 
 // assertBigEq fails t if a.Cmp(b) != 0.
 func assertBigEq(t *testing.T, field string, a, b *big.Int) {
 	t.Helper()
+
 	if a.Cmp(b) != 0 {
 		t.Fatalf("%s mismatch:\n  mine=%x\n  ref =%x", field, a, b)
 	}
@@ -93,6 +101,7 @@ func TestCurveConstantsDifferential(t *testing.T) {
 			assertBigEq(t, "Q", mine.Q, ref.Q)
 			assertBigEq(t, "X", mine.X, ref.X)
 			assertBigEq(t, "Y", mine.Y, ref.Y)
+
 			wantCofactor := big.NewInt(int64(mine.Cofactor))
 			if wantCofactor.Cmp(ref.Co) != 0 {
 				t.Fatalf("Cofactor mine=%d gogost=%s", mine.Cofactor, ref.Co)
@@ -103,6 +112,7 @@ func TestCurveConstantsDifferential(t *testing.T) {
 			if !mine.IsOnCurve(base) {
 				t.Fatalf("clean-room IsOnCurve(base) == false, want true")
 			}
+
 			if !ref.Contains(base.X, base.Y) {
 				t.Fatalf("gogost Contains(base) == false, want true")
 			}
@@ -110,12 +120,15 @@ func TestCurveConstantsDifferential(t *testing.T) {
 			// CRV-01: off-curve point — (X, Y+1) must be rejected by both.
 			offY := new(big.Int).Add(mine.Y, big.NewInt(1))
 			offY.Mod(offY, mine.P)
+
 			offPt := gost3410curves.Point{X: new(big.Int).Set(mine.X), Y: offY}
 			mineOff := mine.IsOnCurve(offPt)
+
 			refOff := ref.Contains(mine.X, offY)
 			if mineOff != refOff {
 				t.Fatalf("IsOnCurve/Contains disagree on off-curve point: mine=%v ref=%v", mineOff, refOff)
 			}
+
 			if mineOff {
 				t.Fatalf("both claim off-curve point (X, Y+1) is on curve — bug in both?")
 			}
@@ -141,18 +154,22 @@ func TestCrossCheckInternalGost(t *testing.T) {
 			if err != nil {
 				t.Fatalf("gostcryptocompat.CurveByOID(%s): %v", tc.oid, err)
 			}
+
 			if mine.PointSize() != ref.PointSize() {
 				t.Fatalf("%s: PointSize mine=%d gogost=%d",
 					tc.name, mine.PointSize(), ref.PointSize())
 			}
+
 			// CRV-04: assert absolute pointSize anchor.
 			if mine.PointSize() != tc.pointSize {
 				t.Fatalf("%s: PointSize mine=%d want=%d (per allOIDs)",
 					tc.name, mine.PointSize(), tc.pointSize)
 			}
+
 			if ref.Name() == "" {
 				t.Fatalf("%s: gogost returned empty name", tc.name)
 			}
+
 			t.Logf("%s: gogost name=%q PointSize=%d", tc.name, ref.Name(), ref.PointSize())
 		})
 	}
@@ -169,10 +186,12 @@ func TestPointEdgeCases(t *testing.T) {
 
 	// Identity + G == G.
 	id := gost3410curves.Point{}
+
 	res := mine.Add(id, G)
 	if res.X.Cmp(G.X) != 0 || res.Y.Cmp(G.Y) != 0 {
 		t.Fatalf("Add(inf, G) != G: got (%x, %x)", res.X, res.Y)
 	}
+
 	// G + Identity == G.
 	res2 := mine.Add(G, id)
 	if res2.X.Cmp(G.X) != 0 || res2.Y.Cmp(G.Y) != 0 {
@@ -182,6 +201,7 @@ func TestPointEdgeCases(t *testing.T) {
 	// G + (-G) == identity. -G = (G.X, P - G.Y).
 	negGY := new(big.Int).Sub(mine.P, G.Y)
 	negG := gost3410curves.Point{X: new(big.Int).Set(G.X), Y: negGY}
+
 	sum := mine.Add(G, negG)
 	if !sum.IsInfinity() {
 		t.Fatalf("Add(G, -G) should be identity, got (%x, %x)", sum.X, sum.Y)
@@ -189,10 +209,12 @@ func TestPointEdgeCases(t *testing.T) {
 
 	// Double(G) should equal 2·G via gogost Exp(2, G.X, G.Y).
 	dbl := mine.Double(G)
+
 	refX, refY, err := ref.Exp(big.NewInt(2), G.X, G.Y)
 	if err != nil {
 		t.Fatalf("gogost Exp(2, G.X, G.Y): %v", err)
 	}
+
 	if dbl.X.Cmp(refX) != 0 || dbl.Y.Cmp(refY) != 0 {
 		t.Fatalf("Double(G) mismatch with gogost Exp(2,G.X,G.Y):\n  mine=(%x,%x)\n  ref =(%x,%x)",
 			dbl.X, dbl.Y, refX, refY)
@@ -237,6 +259,7 @@ func FuzzPointAdd(f *testing.F) {
 		if idx < 0 {
 			idx += len(allOIDs)
 		}
+
 		oidStr := allOIDs[idx].oid
 		mine := mustCurve(t, oidStr)
 		ref := mustGogostCurve(t, oidStr)
@@ -258,9 +281,11 @@ func FuzzPointAdd(f *testing.F) {
 		if s1.Sign() == 0 || s2.Sign() == 0 {
 			t.Skip("zero scalar")
 		}
+
 		if s1.Cmp(s2) == 0 {
 			t.Skip("s1 == s2 (doubling)")
 		}
+
 		negS2 := new(big.Int).Sub(mine.Q, s2)
 		if s1.Cmp(negS2) == 0 {
 			t.Skip("s1 == -s2 mod Q (gogost add known-broken for p+(-p))")
@@ -268,10 +293,12 @@ func FuzzPointAdd(f *testing.F) {
 
 		// Derive P1 = s1·G and P2 = s2·G via gogost Exp to get on-curve points.
 		G := mine.Base()
+
 		refX1, refY1, err := ref.Exp(s1, G.X, G.Y)
 		if err != nil {
 			t.Skipf("gogost Exp(s1): %v", err)
 		}
+
 		refX2, refY2, err := ref.Exp(s2, G.X, G.Y)
 		if err != nil {
 			t.Skipf("gogost Exp(s2): %v", err)
@@ -286,14 +313,17 @@ func FuzzPointAdd(f *testing.F) {
 		// Oracle: (s1+s2)·G via gogost Exp.
 		s3 := new(big.Int).Add(s1, s2)
 		s3.Mod(s3, mine.Q)
+
 		if s3.Sign() == 0 {
 			// s1+s2 ≡ 0 mod Q means result is identity.
 			if !cleanResult.IsInfinity() {
 				t.Fatalf("Add(P1,P2) should be identity when s1+s2≡0 mod Q, got (%x,%x)",
 					cleanResult.X, cleanResult.Y)
 			}
+
 			return
 		}
+
 		oracleX, oracleY, err := ref.Exp(s3, G.X, G.Y)
 		if err != nil {
 			t.Skipf("gogost Exp(s1+s2): %v", err)
@@ -302,6 +332,7 @@ func FuzzPointAdd(f *testing.F) {
 		if cleanResult.IsInfinity() {
 			t.Fatalf("clean-room Add returned infinity but oracle returned (%x,%x)", oracleX, oracleY)
 		}
+
 		if cleanResult.X.Cmp(oracleX) != 0 || cleanResult.Y.Cmp(oracleY) != 0 {
 			t.Fatalf("%s Add(P1,P2) mismatch:\n  mine=(%x,%x)\n  ref =(%x,%x)",
 				oidStr, cleanResult.X, cleanResult.Y, oracleX, oracleY)
@@ -313,6 +344,7 @@ func FuzzPointAdd(f *testing.F) {
 func fixLen(b []byte, n int) []byte {
 	out := make([]byte, n)
 	copy(out, b)
+
 	return out
 }
 
@@ -389,9 +421,11 @@ func FuzzScalarMult(f *testing.F) {
 		if idx < 0 {
 			idx += len(allOIDs)
 		}
+
 		oid := allOIDs[idx].oid
 
 		mine := mustCurve(t, oid)
+
 		ref, err := gost.CurveByOID(oidToASN1(t, oid))
 		if err != nil {
 			t.Fatalf("gogost CurveByOID(%s): %v", oid, err)
@@ -410,12 +444,15 @@ func FuzzScalarMult(f *testing.F) {
 				t.Fatalf("%s: clean-room PublicKeyRaw returned a key where gogost rejected (prv=%x)",
 					oid, prv)
 			}
+
 			t.Skipf("ref key load failed on %s: %v", oid, err)
 		}
+
 		newPub := gost3410sign.PublicKeyRaw(mine, prv)
 		if newPub == nil {
 			t.Fatalf("%s: clean-room PublicKeyRaw nil where gogost ok (prv=%x)", oid, prv)
 		}
+
 		if !bytes.Equal(refPub, newPub) {
 			t.Fatalf("%s: public point mismatch (prv=%x):\n ref  %x\n mine %x",
 				oid, prv, refPub, newPub)

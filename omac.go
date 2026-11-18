@@ -22,10 +22,10 @@ type OMAC struct {
 	block     cipher.Block
 	blockSize int
 	tagSize   int
-	k1        []byte // CMAC subkey K1
-	k2        []byte // CMAC subkey K2
-	state     []byte // running CBC chain value (blockSize bytes)
-	buf       []byte // pending bytes not yet incorporated into state
+	k1        []byte // CMAC subkey K1.
+	k2        []byte // CMAC subkey K2.
+	state     []byte // running CBC chain value (blockSize bytes).
+	buf       []byte // pending bytes not yet incorporated into state.
 }
 
 // NewOMAC returns an OMAC/CMAC instance using the given block cipher.
@@ -39,6 +39,7 @@ func NewOMAC(block cipher.Block, tagSize int) (*OMAC, error) {
 	}
 
 	k1, k2 := cmacSubkeys(block)
+
 	return &OMAC{
 		block:     block,
 		blockSize: bs,
@@ -57,11 +58,12 @@ func NewOMAC(block cipher.Block, tagSize int) (*OMAC, error) {
 func cmacSubkeys(block cipher.Block) (k1, k2 []byte) {
 	bs := block.BlockSize()
 
-	// L = Encrypt(0^bs)
+	// L = Encrypt(0^bs).
 	L := make([]byte, bs)
 	block.Encrypt(L, L)
 
 	var rb byte
+
 	switch bs {
 	case 16:
 		rb = 0x87
@@ -73,6 +75,7 @@ func cmacSubkeys(block cipher.Block) (k1, k2 []byte) {
 
 	k1 = shiftLeftXorRb(L, rb)
 	k2 = shiftLeftXorRb(k1, rb)
+
 	return k1, k2
 }
 
@@ -80,14 +83,17 @@ func cmacSubkeys(block cipher.Block) (k1, k2 []byte) {
 // Input is treated as a big-endian bit string (MSB of in[0] is the leading bit).
 func shiftLeftXorRb(in []byte, rb byte) []byte {
 	out := make([]byte, len(in))
-	msb := in[0] >> 7 // 1 if MSB set, 0 otherwise
+
+	msb := in[0] >> 7 // 1 if MSB set, 0 otherwise.
 	for i := 0; i < len(in)-1; i++ {
 		out[i] = (in[i] << 1) | (in[i+1] >> 7)
 	}
+
 	out[len(in)-1] = in[len(in)-1] << 1
 	if msb == 1 {
 		out[len(in)-1] ^= rb
 	}
+
 	return out
 }
 
@@ -105,6 +111,7 @@ func (o *OMAC) Write(p []byte) (int, error) {
 		// Fill buf up to blockSize.
 		free := o.blockSize - len(o.buf)
 		take := min(free, len(p))
+
 		o.buf = append(o.buf, p[:take]...)
 		p = p[take:]
 
@@ -113,6 +120,7 @@ func (o *OMAC) Write(p []byte) (int, error) {
 		// whether it will remain the final block (K1) or be followed by more.
 		if len(o.buf) == o.blockSize && len(p) > 0 {
 			cbcStep(o.block, o.state, o.buf)
+
 			o.buf = o.buf[:0]
 		}
 	}
@@ -135,6 +143,7 @@ func (o *OMAC) Sum(b []byte) []byte {
 	// Take a snapshot of the running state so we do not mutate the receiver.
 	stateSnap := make([]byte, o.blockSize)
 	copy(stateSnap, o.state)
+
 	bufSnap := make([]byte, len(o.buf))
 	copy(bufSnap, o.buf)
 
@@ -146,8 +155,9 @@ func (o *OMAC) Sum(b []byte) []byte {
 		// Partial (or empty) block: pad with 0x80 0x00… then XOR with K2.
 		padded := make([]byte, o.blockSize)
 		copy(padded, bufSnap)
+
 		padded[len(bufSnap)] = 0x80
-		// rest is already zero
+		// rest is already zero.
 		finalBlock = xorBytes(padded, o.k2)
 	}
 
@@ -160,6 +170,7 @@ func (o *OMAC) Sum(b []byte) []byte {
 func xorBytes(a, b []byte) []byte {
 	out := make([]byte, len(a))
 	subtle.XORBytes(out, a, b)
+
 	return out
 }
 
@@ -169,6 +180,7 @@ func (o *OMAC) Reset() {
 	for i := range o.state {
 		o.state[i] = 0
 	}
+
 	o.buf = o.buf[:0]
 }
 

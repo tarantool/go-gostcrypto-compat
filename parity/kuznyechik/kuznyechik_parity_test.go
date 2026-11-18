@@ -16,9 +16,11 @@ import (
 // keys and blocks, requiring byte-exact agreement plus round-trip identity.
 func TestDiffAgainstGost(t *testing.T) {
 	rng := rand.New(rand.NewSource(0x6b757a))
+
 	for iter := range 4096 {
 		key := make([]byte, 32)
 		blk := make([]byte, 16)
+
 		rng.Read(key)
 		rng.Read(blk)
 
@@ -39,6 +41,7 @@ func TestDiffAgainstGost(t *testing.T) {
 
 		minePT := make([]byte, 16)
 		c.Decrypt(minePT, refCT)
+
 		if !bytes.Equal(minePT, blk) {
 			t.Fatalf("round-trip Decrypt(Encrypt) != p iter=%d\n key=%x p=%x got=%x",
 				iter, key, blk, minePT)
@@ -89,6 +92,7 @@ func TestDiffKAT(t *testing.T) {
 	// Decrypt the pinned ciphertext — both sides must recover the original plaintext.
 	minePT := make([]byte, 16)
 	c.Decrypt(minePT, wantCT)
+
 	if !bytes.Equal(minePT, pt) {
 		t.Fatalf("KAT Decrypt clean-room mismatch: got %x want %x", minePT, pt)
 	}
@@ -97,6 +101,7 @@ func TestDiffKAT(t *testing.T) {
 	if err != nil {
 		t.Fatalf("KuznyechikDecrypt KAT: %v", err)
 	}
+
 	if !bytes.Equal(refPT, pt) {
 		t.Fatalf("KAT Decrypt oracle mismatch: got %x want %x", refPT, pt)
 	}
@@ -135,7 +140,8 @@ func FuzzDiffKuznyechik(f *testing.F) {
 		// In-place Encrypt (dst == src) must produce identical output as distinct-buffer.
 		inBuf := make([]byte, 16)
 		copy(inBuf, blk)
-		c.Encrypt(inBuf, inBuf) // dst == src
+		c.Encrypt(inBuf, inBuf) // dst == src.
+
 		if !bytes.Equal(inBuf, mineCT) {
 			t.Fatalf("Encrypt in-place mismatch\n key=%x blk=%x\n inplace=%x dist=%x",
 				key, blk, inBuf, mineCT)
@@ -157,7 +163,8 @@ func FuzzDiffKuznyechik(f *testing.F) {
 		// In-place Decrypt (dst == src) must produce identical output as distinct-buffer.
 		inBuf2 := make([]byte, 16)
 		copy(inBuf2, blk)
-		c.Decrypt(inBuf2, inBuf2) // dst == src
+		c.Decrypt(inBuf2, inBuf2) // dst == src.
+
 		if !bytes.Equal(inBuf2, minePT) {
 			t.Fatalf("Decrypt in-place mismatch\n key=%x blk=%x\n inplace=%x dist=%x",
 				key, blk, inBuf2, minePT)
@@ -166,6 +173,7 @@ func FuzzDiffKuznyechik(f *testing.F) {
 		// Round-trip on the clean-room side.
 		back := make([]byte, 16)
 		c.Decrypt(back, mineCT)
+
 		if !bytes.Equal(back, blk) {
 			t.Fatalf("round-trip Decrypt(Encrypt) != p\n key=%x p=%x got=%x", key, blk, back)
 		}
@@ -177,11 +185,13 @@ func seedHex(s string) []byte {
 	if err != nil {
 		panic(err)
 	}
+
 	return b
 }
 
 func fixLen(b []byte, n int) []byte {
 	out := make([]byte, n)
 	copy(out, b)
+
 	return out
 }

@@ -29,7 +29,7 @@ const (
 	MagmaBlockSize      = gost341264.BlockSize  // 8
 )
 
-// ── Hash factories (return hash.Hash, never a gogost type) ───────────────────
+// ── Hash factories (return hash.Hash, never a gogost type) ───────────────────.
 
 // NewStreebog256Hash returns a fresh Streebog-256 (GOST R 34.11-2012) hash.
 func NewStreebog256Hash() hash.Hash { return gost34112012256.New() }
@@ -52,15 +52,17 @@ func NewGOST28147IMITPlaceholderHash() hash.Hash {
 	key := make([]byte, GOST28147KeySize)
 	c := gost28147.NewCipher(key, gost28147.SboxDefault)
 	iv := make([]byte, GOST28147BlockSize)
+
 	mac, err := c.NewMAC(4, iv)
 	if err != nil {
 		// NewMAC only fails on invalid size or IV length; both are hardcoded here.
 		panic("gost.NewGOST28147IMITPlaceholderHash: " + err.Error())
 	}
+
 	return mac
 }
 
-// ── Block ciphers (return crypto/cipher.Block, never a gogost type) ──────────
+// ── Block ciphers (return crypto/cipher.Block, never a gogost type) ──────────.
 
 // NewKuznyechikCipher returns a Kuznyechik (GOST R 34.12-2015, 128-bit) block
 // cipher for the given 32-byte key.
@@ -70,7 +72,7 @@ func NewKuznyechikCipher(key []byte) cipher.Block { return gost3412128.NewCipher
 // the given 32-byte key.
 func NewMagmaCipher(key []byte) cipher.Block { return gost341264.NewCipher(key) }
 
-// ── GOST 28147-89 block cipher (opaque handle for the CNT/IMIT protector) ────
+// ── GOST 28147-89 block cipher (opaque handle for the CNT/IMIT protector) ────.
 
 // GOST28147Cipher is an opaque GOST 28147-89 block cipher. It exposes the
 // single-block primitives the record-layer CNT mode and IMIT MAC need, so a
@@ -98,10 +100,11 @@ func (c *GOST28147Cipher) SeqMACBlock(block []byte) []byte {
 	zeroIV := make([]byte, GOST28147BlockSize)
 	mac, _ := c.inner.NewMAC(GOST28147BlockSize, zeroIV)
 	mac.Write(block)
+
 	return mac.Sum(nil)
 }
 
-// ── GOST R 34.10 signature verify on an explicit curve ───────────────────────
+// ── GOST R 34.10 signature verify on an explicit curve ───────────────────────.
 
 // VerifyDigestOnCurve verifies a GOST R 34.10 signature over digest using the
 // public key pubRaw on the given curve. pubRaw is the LE-encoded public key;
@@ -112,6 +115,7 @@ func VerifyDigestOnCurve(curve *Curve, pubRaw, digest, sig []byte) (bool, error)
 	if err != nil {
 		return false, err
 	}
+
 	return pub.VerifyDigest(digest, sig)
 }
 
@@ -130,10 +134,12 @@ func PublicKeyRawFromPrivate(curve *Curve, prvRaw []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	pub, err := prv.PublicKey()
 	if err != nil {
 		return nil, err
 	}
+
 	return pub.Raw(), nil
 }
 
@@ -145,10 +151,11 @@ func SignDigestOnCurve(curve *Curve, prvRaw, digest []byte, rnd io.Reader) ([]by
 	if err != nil {
 		return nil, err
 	}
+
 	return prv.SignDigest(digest, rnd)
 }
 
-// ── GOST R 34.10-2001 test-parameter-set helpers (test-vector support) ───────
+// ── GOST R 34.10-2001 test-parameter-set helpers (test-vector support) ───────.
 
 // GOST2001TestParamSetCurve returns the GOST R 34.10-2001 test parameter set
 // curve. It is used only by round-trip tests against upstream vectors; TLS
@@ -169,13 +176,16 @@ func GOST2001CryptoProAParamSetCurve() *Curve {
 // public key from prvRaw on the test parameter set curve.
 func PublicKeyRawFromPrivate2001Test(prvRaw []byte) ([]byte, error) {
 	c := gost3410.CurveIdGostR34102001TestParamSet()
+
 	prv, err := gost3410.NewPrivateKey(c, prvRaw)
 	if err != nil {
 		return nil, err
 	}
+
 	pub, err := prv.PublicKey()
 	if err != nil {
 		return nil, err
 	}
+
 	return pub.Raw(), nil
 }

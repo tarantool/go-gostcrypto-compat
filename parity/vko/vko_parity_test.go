@@ -22,10 +22,12 @@ import (
 
 func mustHexF(t *testing.T, s string) []byte {
 	t.Helper()
+
 	b, err := hex.DecodeString(s)
 	if err != nil {
 		t.Fatalf("bad hex %q: %v", s, err)
 	}
+
 	return b
 }
 
@@ -33,10 +35,12 @@ func mustHexF(t *testing.T, s string) []byte {
 // 2001 KAT (scalars only) can feed both impls the same peer point.
 func deriveQ(t *testing.T, c *gost3410curves.Curve, dLE []byte) []byte {
 	t.Helper()
+
 	q, err := vko.DeriveQLE(c, dLE)
 	if err != nil {
 		t.Fatalf("DeriveQLE: %v", err)
 	}
+
 	return q
 }
 
@@ -45,15 +49,18 @@ func deriveQ(t *testing.T, c *gost3410curves.Curve, dLE []byte) []byte {
 // base-point multiplication (VKO-04).
 func deriveQOracle(t *testing.T, gogostCurve *gogost3410.Curve, dLE []byte) []byte {
 	t.Helper()
+
 	prv, err := gogost3410.NewPrivateKeyLE(gogostCurve, dLE)
 	if err != nil {
 		t.Fatalf("oracle NewPrivateKeyLE: %v", err)
 	}
+
 	pub, err := prv.PublicKey()
 	if err != nil {
 		t.Fatalf("oracle PublicKey: %v", err)
 	}
-	return pub.Raw() // RawLE: LE(X)||LE(Y), matches DeriveQLE encoding
+
+	return pub.Raw() // RawLE: LE(X)||LE(Y), matches DeriveQLE encoding.
 }
 
 // oracleCurve2001Test returns the gogost curve matching vko.Curve2001Test()
@@ -97,10 +104,12 @@ func TestDifferential(t *testing.T) {
 	// Verify DeriveQLE vs oracle for the 2001 curve (VKO-04).
 	gc2001 := oracleCurve2001Test(t)
 	oQ1 := deriveQOracle(t, gc2001, d1)
+
 	oQ2 := deriveQOracle(t, gc2001, d2)
 	if !bytes.Equal(Q1, oQ1) {
 		t.Fatalf("DeriveQLE 2001 Q1 mismatch:\n got=%x\n ref=%x", Q1, oQ1)
 	}
+
 	if !bytes.Equal(Q2, oQ2) {
 		t.Fatalf("DeriveQLE 2001 Q2 mismatch:\n got=%x\n ref=%x", Q2, oQ2)
 	}
@@ -122,10 +131,12 @@ func TestDifferential(t *testing.T) {
 	// Verify DeriveQLE vs oracle for the 512-paramSetA curve (VKO-04).
 	gc512A := oracleCurve512A()
 	oQA := deriveQOracle(t, gc512A, dA)
+
 	oQB := deriveQOracle(t, gc512A, dB)
 	if !bytes.Equal(QA, oQA) {
 		t.Fatalf("DeriveQLE 512A QA mismatch:\n got=%x\n ref=%x", QA, oQA)
 	}
+
 	if !bytes.Equal(QB, oQB) {
 		t.Fatalf("DeriveQLE 512A QB mismatch:\n got=%x\n ref=%x", QB, oQB)
 	}
@@ -139,14 +150,16 @@ func TestDifferential(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CurveByOID tc26-256-A: %v", err)
 	}
+
 	oidTc26256A := asn1.ObjectIdentifier{1, 2, 643, 7, 1, 2, 1, 1, 1}
+
 	oracle256A, err := gostoracle.CurveByOID(oidTc26256A)
 	if err != nil {
 		t.Fatalf("oracle CurveByOID tc26-256-A: %v", err)
 	}
 
 	// 32-byte private scalars for the 256-bit cofactor-4 curve.
-	dA256 := bytes.Repeat([]byte{0x11}, 32) // same as cofactor4_test.go
+	dA256 := bytes.Repeat([]byte{0x11}, 32) // same as cofactor4_test.go.
 	dB256 := bytes.Repeat([]byte{0x22}, 32)
 	ukmCof := []byte{1, 0, 0, 0, 0, 0, 0, 0}
 
@@ -156,10 +169,12 @@ func TestDifferential(t *testing.T) {
 	// VKO-04: DeriveQLE vs oracle on the cofactor-4 curve.
 	gc256A := oracleCurve256A()
 	oQA256 := deriveQOracle(t, gc256A, dA256)
+
 	oQB256 := deriveQOracle(t, gc256A, dB256)
 	if !bytes.Equal(QA256, oQA256) {
 		t.Fatalf("DeriveQLE 256A QA256 mismatch:\n got=%x\n ref=%x", QA256, oQA256)
 	}
+
 	if !bytes.Equal(QB256, oQB256) {
 		t.Fatalf("DeriveQLE 256A QB256 mismatch:\n got=%x\n ref=%x", QB256, oQB256)
 	}
@@ -170,18 +185,20 @@ func TestDifferential(t *testing.T) {
 	// fullOrder, making the Mod branch non-trivial. The oracle (gogost) does no
 	// reduction but the result is identical by group theory (ord(K1)|fullOrder).
 	largeUKM := make([]byte, 32)
+
 	largeUKM[0] = 0x01
 	for i := 1; i < 32; i++ {
 		largeUKM[i] = 0xff
 	}
 
 	type variant int
+
 	const (
 		v2001             variant = iota
-		v2012256                  // default 512-paramSetA
-		v2012512                  // default 512-paramSetA
-		v2012256cof4              // tc26-256-A, cofactor-4, small UKM (VKO-01)
-		v2012256cof4lgukm         // tc26-256-A, cofactor-4, large UKM (VKO-05)
+		v2012256                  // default 512-paramSetA.
+		v2012512                  // default 512-paramSetA.
+		v2012256cof4              // tc26-256-A, cofactor-4, small UKM (VKO-01).
+		v2012256cof4lgukm         // tc26-256-A, cofactor-4, large UKM (VKO-05).
 	)
 
 	clean := func(v variant, prv, peer, ukm []byte) ([]byte, error) {
@@ -238,10 +255,12 @@ func TestDifferential(t *testing.T) {
 			if err != nil {
 				t.Fatalf("clean-room: %v", err)
 			}
+
 			ref, err := oracle(tc.v, tc.prv, tc.peer, tc.ukm)
 			if err != nil {
 				t.Fatalf("oracle: %v", err)
 			}
+
 			if !bytes.Equal(got, ref) {
 				t.Fatalf("KEK mismatch vs oracle:\n got = %x\n ref = %x", got, ref)
 			}
@@ -254,7 +273,9 @@ func TestDifferential(t *testing.T) {
 func norm(b []byte, n int) []byte {
 	out := make([]byte, n)
 	copy(out, b)
+
 	out[0] |= 0x01
+
 	return out
 }
 
@@ -268,7 +289,7 @@ func norm(b []byte, n int) []byte {
 func FuzzDifferential(f *testing.F) {
 	// seed#0: v2012_256 (variantByte=0, even → v2012_256) on 512-paramSetA.
 	f.Add(
-		uint8(0), // variantByte → v2012_256
+		uint8(0), // variantByte → v2012_256.
 		mustHexFz(f, "c990ecd972fce84ec4db022778f50fcac726f46708384b8d458304962d7147f8"+
 			"c2db41cef22c90b102f2968404f9b9be6d47c79692d81826b32b8daca43cb667"),
 		mustHexFz(f, "48c859f7b6f11585887cc05ec6ef1390cfea739b1a18c0d4662293ef63b79e3b"+
@@ -277,14 +298,14 @@ func FuzzDifferential(f *testing.F) {
 	)
 	// seed#1: v2001 (variantByte%3==1).
 	f.Add(
-		uint8(1), // variantByte → v2001
+		uint8(1), // variantByte → v2001.
 		mustHexFz(f, "1df129e43dab345b68f6a852f4162dc69f36b2f84717d08755cc5c44150bf928"),
 		mustHexFz(f, "5b9356c6474f913f1e83885ea0edd5df1a43fd9d799d219093241157ac9ed473"),
 		mustHexFz(f, "5172be25f852a233"),
 	)
 	// seed#2: v2012_512 (variantByte%3==2).
 	f.Add(
-		uint8(2), // variantByte → v2012_512
+		uint8(2), // variantByte → v2012_512.
 		mustHexFz(f, "c990ecd972fce84ec4db022778f50fcac726f46708384b8d458304962d7147f8"+
 			"c2db41cef22c90b102f2968404f9b9be6d47c79692d81826b32b8daca43cb667"),
 		mustHexFz(f, "48c859f7b6f11585887cc05ec6ef1390cfea739b1a18c0d4662293ef63b79e3b"+
@@ -301,14 +322,15 @@ func FuzzDifferential(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, variantByte uint8, rawA, rawB, rawUKM []byte) {
 		switch variantByte % 3 {
-		case 0: // v2012_256 on default 512-paramSetA
+		case 0: // v2012_256 on default 512-paramSetA.
 			fuzzVKO2012256(t, c512A, gc512A, rawA, rawB, rawUKM)
-		case 1: // v2001 on test curve (256-bit, 32-byte scalars)
+		case 1: // v2001 on test curve (256-bit, 32-byte scalars).
 			fuzzVKO2001(t, c2001, gc2001, rawA, rawB, rawUKM)
-		case 2: // v2012_512 on default 512-paramSetA
+		case 2: // v2012_512 on default 512-paramSetA.
 			fuzzVKO2012512(t, c512A, gc512A, rawA, rawB, rawUKM)
 		}
-		_ = oidTc26256A // referenced in TestDifferential; suppress lint
+
+		_ = oidTc26256A // referenced in TestDifferential; suppress lint.
 	})
 }
 
@@ -322,6 +344,7 @@ func fuzzVKO2012256(
 	rawA, rawB, rawUKM []byte,
 ) {
 	t.Helper()
+
 	dA := norm(rawA, 64)
 	dB := norm(rawB, 64)
 	ukm := norm(rawUKM, 8)
@@ -334,25 +357,31 @@ func fuzzVKO2012256(
 		if oErr == nil {
 			_, oErr = oprv.PublicKey()
 		}
+
 		if oErr == nil {
 			t.Fatalf("clean-room DeriveQLE(A) failed but oracle accepts dA: %v", err)
 		}
+
 		return
 	}
+
 	oQA, oErr := func() ([]byte, error) {
 		prv, e := gogost3410.NewPrivateKeyLE(gc, dA)
 		if e != nil {
 			return nil, e
 		}
+
 		pub, e := prv.PublicKey()
 		if e != nil {
 			return nil, e
 		}
+
 		return pub.Raw(), nil
 	}()
 	if oErr != nil {
 		t.Fatalf("oracle DeriveQLE(A) failed but clean-room succeeded: %v", oErr)
 	}
+
 	if !bytes.Equal(QA, oQA) {
 		t.Fatalf("DeriveQLE(A) mismatch:\n got=%x\n ref=%x", QA, oQA)
 	}
@@ -364,25 +393,31 @@ func fuzzVKO2012256(
 		if oErr == nil {
 			_, oErr = oprv.PublicKey()
 		}
+
 		if oErr == nil {
 			t.Fatalf("clean-room DeriveQLE(B) failed but oracle accepts dB: %v", err)
 		}
+
 		return
 	}
+
 	oQB, oErr := func() ([]byte, error) {
 		prv, e := gogost3410.NewPrivateKeyLE(gc, dB)
 		if e != nil {
 			return nil, e
 		}
+
 		pub, e := prv.PublicKey()
 		if e != nil {
 			return nil, e
 		}
+
 		return pub.Raw(), nil
 	}()
 	if oErr != nil {
 		t.Fatalf("oracle DeriveQLE(B) failed but clean-room succeeded: %v", oErr)
 	}
+
 	if !bytes.Equal(QB, oQB) {
 		t.Fatalf("DeriveQLE(B) mismatch:\n got=%x\n ref=%x", QB, oQB)
 	}
@@ -393,19 +428,24 @@ func fuzzVKO2012256(
 		if _, oErr := gostoracle.VKO2012_256(dA, QB, ukm); oErr == nil {
 			t.Fatalf("clean-room VKO2012_256 failed but oracle succeeded: %v", err)
 		}
+
 		return
 	}
+
 	kBA, err := vko.VKO2012_256(dB, QA, ukm)
 	if err != nil {
 		t.Fatalf("asymmetric error: B->A failed but A->B did not: %v", err)
 	}
+
 	if !bytes.Equal(kAB, kBA) {
 		t.Fatalf("symmetry broken: A->B=%x B->A=%x", kAB, kBA)
 	}
+
 	ref, err := gostoracle.VKO2012_256(dA, QB, ukm)
 	if err != nil {
 		t.Fatalf("oracle error where clean-room succeeded: %v", err)
 	}
+
 	if !bytes.Equal(kAB, ref) {
 		t.Fatalf("KEK != oracle:\n got=%x\n ref=%x", kAB, ref)
 	}
@@ -433,25 +473,31 @@ func fuzzVKO2001(
 		if oErr == nil {
 			_, oErr = oprv.PublicKey()
 		}
+
 		if oErr == nil {
 			t.Fatalf("clean-room DeriveQLE(2001/A) failed but oracle accepts dA: %v", err)
 		}
+
 		return
 	}
+
 	oQA, oErr := func() ([]byte, error) {
 		prv, e := gogost3410.NewPrivateKeyLE(gc, dA)
 		if e != nil {
 			return nil, e
 		}
+
 		pub, e := prv.PublicKey()
 		if e != nil {
 			return nil, e
 		}
+
 		return pub.Raw(), nil
 	}()
 	if oErr != nil {
 		t.Fatalf("oracle DeriveQLE(2001/A) failed but clean-room succeeded: %v", oErr)
 	}
+
 	if !bytes.Equal(QA, oQA) {
 		t.Fatalf("DeriveQLE(2001/A) mismatch:\n got=%x\n ref=%x", QA, oQA)
 	}
@@ -462,25 +508,31 @@ func fuzzVKO2001(
 		if oErr == nil {
 			_, oErr = oprv.PublicKey()
 		}
+
 		if oErr == nil {
 			t.Fatalf("clean-room DeriveQLE(2001/B) failed but oracle accepts dB: %v", err)
 		}
+
 		return
 	}
+
 	oQB, oErr := func() ([]byte, error) {
 		prv, e := gogost3410.NewPrivateKeyLE(gc, dB)
 		if e != nil {
 			return nil, e
 		}
+
 		pub, e := prv.PublicKey()
 		if e != nil {
 			return nil, e
 		}
+
 		return pub.Raw(), nil
 	}()
 	if oErr != nil {
 		t.Fatalf("oracle DeriveQLE(2001/B) failed but clean-room succeeded: %v", oErr)
 	}
+
 	if !bytes.Equal(QB, oQB) {
 		t.Fatalf("DeriveQLE(2001/B) mismatch:\n got=%x\n ref=%x", QB, oQB)
 	}
@@ -490,19 +542,24 @@ func fuzzVKO2001(
 		if _, oErr := gostoracle.VKO2001TestCurve(dA, QB, ukm); oErr == nil {
 			t.Fatalf("clean-room VKO2001 failed but oracle succeeded: %v", err)
 		}
+
 		return
 	}
+
 	kBA, err := vko.VKO2001TestCurve(dB, QA, ukm)
 	if err != nil {
 		t.Fatalf("VKO2001: asymmetric error B->A: %v", err)
 	}
+
 	if !bytes.Equal(kAB, kBA) {
 		t.Fatalf("VKO2001 symmetry broken: A->B=%x B->A=%x", kAB, kBA)
 	}
+
 	ref, err := gostoracle.VKO2001TestCurve(dA, QB, ukm)
 	if err != nil {
 		t.Fatalf("VKO2001 oracle error where clean-room succeeded: %v", err)
 	}
+
 	if !bytes.Equal(kAB, ref) {
 		t.Fatalf("VKO2001 KEK != oracle:\n got=%x\n ref=%x", kAB, ref)
 	}
@@ -517,6 +574,7 @@ func fuzzVKO2012512(
 	rawA, rawB, rawUKM []byte,
 ) {
 	t.Helper()
+
 	dA := norm(rawA, 64)
 	dB := norm(rawB, 64)
 	ukm := norm(rawUKM, 8)
@@ -528,25 +586,31 @@ func fuzzVKO2012512(
 		if oErr == nil {
 			_, oErr = oprv.PublicKey()
 		}
+
 		if oErr == nil {
 			t.Fatalf("clean-room DeriveQLE(512/A) failed but oracle accepts dA: %v", err)
 		}
+
 		return
 	}
+
 	oQA, oErr := func() ([]byte, error) {
 		prv, e := gogost3410.NewPrivateKeyLE(gc, dA)
 		if e != nil {
 			return nil, e
 		}
+
 		pub, e := prv.PublicKey()
 		if e != nil {
 			return nil, e
 		}
+
 		return pub.Raw(), nil
 	}()
 	if oErr != nil {
 		t.Fatalf("oracle DeriveQLE(512/A) failed but clean-room succeeded: %v", oErr)
 	}
+
 	if !bytes.Equal(QA, oQA) {
 		t.Fatalf("DeriveQLE(512/A) mismatch:\n got=%x\n ref=%x", QA, oQA)
 	}
@@ -557,25 +621,31 @@ func fuzzVKO2012512(
 		if oErr == nil {
 			_, oErr = oprv.PublicKey()
 		}
+
 		if oErr == nil {
 			t.Fatalf("clean-room DeriveQLE(512/B) failed but oracle accepts dB: %v", err)
 		}
+
 		return
 	}
+
 	oQB, oErr := func() ([]byte, error) {
 		prv, e := gogost3410.NewPrivateKeyLE(gc, dB)
 		if e != nil {
 			return nil, e
 		}
+
 		pub, e := prv.PublicKey()
 		if e != nil {
 			return nil, e
 		}
+
 		return pub.Raw(), nil
 	}()
 	if oErr != nil {
 		t.Fatalf("oracle DeriveQLE(512/B) failed but clean-room succeeded: %v", oErr)
 	}
+
 	if !bytes.Equal(QB, oQB) {
 		t.Fatalf("DeriveQLE(512/B) mismatch:\n got=%x\n ref=%x", QB, oQB)
 	}
@@ -585,19 +655,24 @@ func fuzzVKO2012512(
 		if _, oErr := gostoracle.VKO2012_512(dA, QB, ukm); oErr == nil {
 			t.Fatalf("clean-room VKO2012_512 failed but oracle succeeded: %v", err)
 		}
+
 		return
 	}
+
 	kBA, err := vko.VKO2012_512(dB, QA, ukm)
 	if err != nil {
 		t.Fatalf("VKO2012_512: asymmetric error B->A: %v", err)
 	}
+
 	if !bytes.Equal(kAB, kBA) {
 		t.Fatalf("VKO2012_512 symmetry broken: A->B=%x B->A=%x", kAB, kBA)
 	}
+
 	ref, err := gostoracle.VKO2012_512(dA, QB, ukm)
 	if err != nil {
 		t.Fatalf("VKO2012_512 oracle error where clean-room succeeded: %v", err)
 	}
+
 	if !bytes.Equal(kAB, ref) {
 		t.Fatalf("VKO2012_512 KEK != oracle:\n got=%x\n ref=%x", kAB, ref)
 	}
@@ -605,9 +680,11 @@ func fuzzVKO2012512(
 
 func mustHexFz(f *testing.F, s string) []byte {
 	f.Helper()
+
 	b, err := hex.DecodeString(s)
 	if err != nil {
 		f.Fatalf("bad hex %q: %v", s, err)
 	}
+
 	return b
 }

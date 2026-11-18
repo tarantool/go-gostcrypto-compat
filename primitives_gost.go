@@ -74,10 +74,11 @@ func CurveByOID(oid asn1.ObjectIdentifier) (*Curve, error) {
 	case oid.Equal(asn1.ObjectIdentifier{1, 2, 643, 7, 1, 2, 1, 2, 3}):
 		return &Curve{inner: gost3410.CurveIdtc26gost34102012512paramSetC()}, nil
 	}
+
 	return nil, fmt.Errorf("gost: unsupported curve OID %v", oid)
 }
 
-// ── Kuznyechik (GOST R 34.12-2015, 128-bit) ──────────────────────────────────
+// ── Kuznyechik (GOST R 34.12-2015, 128-bit) ──────────────────────────────────.
 
 // KuznyechikEncrypt encrypts one 16-byte block with the given 32-byte key.
 // Returns an error if the input is not exactly 16 bytes.
@@ -107,7 +108,7 @@ func KuznyechikDecrypt(key, ciphertext []byte) ([]byte, error) {
 	return dst, nil
 }
 
-// ── Magma (GOST R 34.12-2015, 64-bit) ────────────────────────────────────────
+// ── Magma (GOST R 34.12-2015, 64-bit) ────────────────────────────────────────.
 
 // MagmaEncrypt encrypts one 8-byte block with the given 32-byte key.
 // Returns an error if the input is not exactly 8 bytes.
@@ -137,7 +138,7 @@ func MagmaDecrypt(key, ciphertext []byte) ([]byte, error) {
 	return dst, nil
 }
 
-// ── GOST 28147-89 ─────────────────────────────────────────────────────────────
+// ── GOST 28147-89 ─────────────────────────────────────────────────────────────.
 
 // GOST2814789Encrypt encrypts one 8-byte block with the given 32-byte key using
 // the default (CryptoPro-A) S-box. Returns an error if the input is not
@@ -169,12 +170,13 @@ func GOST2814789Decrypt(key, ciphertext []byte) ([]byte, error) {
 	return dst, nil
 }
 
-// ── Streebog (GOST R 34.11-2012) ─────────────────────────────────────────────
+// ── Streebog (GOST R 34.11-2012) ─────────────────────────────────────────────.
 
 // Streebog256 computes the Streebog-256 (GOST R 34.11-2012, 256-bit) hash.
 func Streebog256(msg []byte) []byte {
 	h := gost34112012256.New()
 	h.Write(msg)
+
 	return h.Sum(nil)
 }
 
@@ -182,19 +184,21 @@ func Streebog256(msg []byte) []byte {
 func Streebog512(msg []byte) []byte {
 	h := gost34112012512.New()
 	h.Write(msg)
+
 	return h.Sum(nil)
 }
 
-// ── GOST R 34.11-94 hash ──────────────────────────────────────────────────────
+// ── GOST R 34.11-94 hash ──────────────────────────────────────────────────────.
 
 // GOSTR341194 computes the GOST R 34.11-94 hash using the CryptoPro parameter set.
 func GOSTR341194(msg []byte) []byte {
 	h := gost341194.New(&gost28147.SboxIdGostR341194CryptoProParamSet)
 	h.Write(msg)
+
 	return h.Sum(nil)
 }
 
-// ── GOST R 34.10-2001 signature verify ───────────────────────────────────────
+// ── GOST R 34.10-2001 signature verify ───────────────────────────────────────.
 
 // R342001Verify verifies a GOST R 34.10-2001 signature.
 // curve is the 256-bit CryptoPro-A parameter set (id-GostR3410-2001-CryptoPro-A).
@@ -204,14 +208,16 @@ func GOSTR341194(msg []byte) []byte {
 // Returns true if the signature is valid.
 func R342001Verify(pubRaw, digest, sig []byte) (bool, error) {
 	c := gost3410.CurveIdGostR34102001CryptoProAParamSet()
+
 	pub, err := gost3410.NewPublicKey(c, pubRaw)
 	if err != nil {
 		return false, err
 	}
+
 	return pub.VerifyDigest(digest, sig)
 }
 
-// ── GOST R 34.10-2012 signature sign + verify ────────────────────────────────
+// ── GOST R 34.10-2012 signature sign + verify ────────────────────────────────.
 
 // R341012Sign signs digest with a GOST R 34.10-2012 256-bit private key.
 // prvRaw is the LE-encoded private key (32 bytes); uses the 2001 test parameter
@@ -219,10 +225,12 @@ func R342001Verify(pubRaw, digest, sig []byte) (bool, error) {
 // Returns the 64-byte signature.
 func R341012Sign(prvRaw, digest []byte) ([]byte, error) {
 	c := gost3410.CurveIdGostR34102001TestParamSet()
+
 	prv, err := gost3410.NewPrivateKey(c, prvRaw)
 	if err != nil {
 		return nil, err
 	}
+
 	return prv.SignDigest(digest, rand.Reader)
 }
 
@@ -231,18 +239,21 @@ func R341012Sign(prvRaw, digest []byte) ([]byte, error) {
 // Uses the 2001 test parameter set curve (256-bit).
 func R341012Verify(prvRaw, digest, sig []byte) (bool, error) {
 	c := gost3410.CurveIdGostR34102001TestParamSet()
+
 	prv, err := gost3410.NewPrivateKey(c, prvRaw)
 	if err != nil {
 		return false, err
 	}
+
 	pub, err := prv.PublicKey()
 	if err != nil {
 		return false, err
 	}
+
 	return pub.VerifyDigest(digest, sig)
 }
 
-// ── VKO GOST R 34.10-2001 key agreement ──────────────────────────────────────
+// ── VKO GOST R 34.10-2001 key agreement ──────────────────────────────────────.
 
 // VKO2001 computes the VKO GOST R 34.10-2001 shared KEK (RFC 4357) on the
 // id-GostR3410-2001-CryptoPro-A curve. Preserved as the default entry point
@@ -259,11 +270,14 @@ func VKO2001OnCurve(curve *Curve, prvRaw, pubRaw, ukmRaw []byte) ([]byte, error)
 	if err != nil {
 		return nil, err
 	}
+
 	pub, err := gost3410.NewPublicKey(curve.inner, pubRaw)
 	if err != nil {
 		return nil, err
 	}
+
 	ukm := gost3410.NewUKM(ukmRaw)
+
 	return prv.KEK2001(pub, ukm)
 }
 
@@ -273,19 +287,23 @@ func VKO2001OnCurve(curve *Curve, prvRaw, pubRaw, ukmRaw []byte) ([]byte, error)
 // VKO2001 (CryptoPro-A).
 func VKO2001TestCurve(prvRaw, pubRaw, ukmRaw []byte) ([]byte, error) {
 	c := gost3410.CurveIdGostR34102001TestParamSet()
+
 	prv, err := gost3410.NewPrivateKey(c, prvRaw)
 	if err != nil {
 		return nil, err
 	}
+
 	pub, err := gost3410.NewPublicKey(c, pubRaw)
 	if err != nil {
 		return nil, err
 	}
+
 	ukm := gost3410.NewUKM(ukmRaw)
+
 	return prv.KEK2001(pub, ukm)
 }
 
-// ── CryptoPro key wrap (RFC 4357 §6.3 + §6.5) ────────────────────────────────
+// ── CryptoPro key wrap (RFC 4357 §6.3 + §6.5) ────────────────────────────────.
 
 // KeyWrapCryptoPro implements the CryptoPro key wrap algorithm defined in
 // RFC 4357 §6.3 (wrap) and §6.5 (diversification). It is used by
@@ -307,9 +325,11 @@ func KeyWrapCryptoPro(sbox *Sbox, kek, ukm, sessionKey []byte) ([]byte, error) {
 	if len(kek) != 32 {
 		return nil, fmt.Errorf("gost: KeyWrapCryptoPro KEK must be 32 bytes, got %d", len(kek))
 	}
+
 	if len(ukm) != 8 {
 		return nil, fmt.Errorf("gost: KeyWrapCryptoPro UKM must be 8 bytes, got %d", len(ukm))
 	}
+
 	if len(sessionKey) != 32 {
 		return nil, fmt.Errorf("gost: KeyWrapCryptoPro session key must be 32 bytes, got %d", len(sessionKey))
 	}
@@ -318,6 +338,7 @@ func KeyWrapCryptoPro(sbox *Sbox, kek, ukm, sessionKey []byte) ([]byte, error) {
 
 	// Encrypt sessionKey in ECB mode under the diversified key.
 	c := gost28147.NewCipher(kekUKM, sbox.inner)
+
 	encrypted := make([]byte, 32)
 	for i := 0; i < 32; i += 8 {
 		c.Encrypt(encrypted[i:i+8], sessionKey[i:i+8])
@@ -328,15 +349,18 @@ func KeyWrapCryptoPro(sbox *Sbox, kek, ukm, sessionKey []byte) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("gost: KeyWrapCryptoPro NewMAC: %w", err)
 	}
+
 	if _, err := mac.Write(sessionKey); err != nil {
 		return nil, fmt.Errorf("gost: KeyWrapCryptoPro MAC write: %w", err)
 	}
+
 	macOut := mac.Sum(nil)
 
 	out := make([]byte, 44)
 	copy(out[0:8], ukm)
 	copy(out[8:40], encrypted)
 	copy(out[40:44], macOut)
+
 	return out, nil
 }
 
@@ -349,6 +373,7 @@ func keyDiversifyCryptoPro(sbox *Sbox, inputKey, ukm []byte) []byte {
 
 	for i := range 8 {
 		var s1, s2 uint32
+
 		for j := range 8 {
 			k := uint32(out[4*j]) | uint32(out[4*j+1])<<8 | uint32(out[4*j+2])<<16 | uint32(out[4*j+3])<<24
 			if ukm[i]&(1<<j) != 0 {
@@ -357,7 +382,9 @@ func keyDiversifyCryptoPro(sbox *Sbox, inputKey, ukm []byte) []byte {
 				s2 += k
 			}
 		}
+
 		var S [8]byte
+
 		S[0] = byte(s1)
 		S[1] = byte(s1 >> 8)
 		S[2] = byte(s1 >> 16)
@@ -371,10 +398,11 @@ func keyDiversifyCryptoPro(sbox *Sbox, inputKey, ukm []byte) []byte {
 		cfb := c.NewCFBEncrypter(S[:])
 		cfb.XORKeyStream(out, out)
 	}
+
 	return out
 }
 
-// ── VKO GOST R 34.10-2012 key agreement ──────────────────────────────────────
+// ── VKO GOST R 34.10-2012 key agreement ──────────────────────────────────────.
 
 // VKO2012_256 computes VKO GOST R 34.10-2012 with 256-bit KEK output (RFC 7836)
 // on the id-tc26-gost-3410-2012-512-paramSetA curve. Preserved as the default
@@ -392,15 +420,18 @@ func VKO2012_256OnCurve(curve *Curve, prvRaw, pubRaw, ukmRaw []byte) ([]byte, er
 	if err != nil {
 		return nil, err
 	}
+
 	pub, err := gost3410.NewPublicKey(curve.inner, pubRaw)
 	if err != nil {
 		return nil, err
 	}
+
 	ukm := gost3410.NewUKM(ukmRaw)
+
 	return prv.KEK2012256(pub, ukm)
 }
 
-// ── GOST 28147-89 CNT mode and IMIT MAC ──────────────────────────────────────
+// ── GOST 28147-89 CNT mode and IMIT MAC ──────────────────────────────────────.
 
 // NewGOST28147_CNT returns a cipher.Stream implementing GOST 28147-89 in CNT
 // (counter stream) mode with the CryptoPro-A S-box (SboxDefault = CryptoPro-A,
@@ -415,10 +446,13 @@ func NewGOST28147_CNT(key, iv []byte) (*gost28147.CTR, error) {
 	if len(key) != gost28147.KeySize {
 		return nil, fmt.Errorf("gost: GOST28147_CNT key must be %d bytes, got %d", gost28147.KeySize, len(key))
 	}
+
 	if len(iv) != gost28147.BlockSize {
 		return nil, fmt.Errorf("gost: GOST28147_CNT iv must be %d bytes, got %d", gost28147.BlockSize, len(iv))
 	}
+
 	c := gost28147.NewCipher(key, gost28147.SboxDefault)
+
 	return c.NewCTR(iv), nil
 }
 
@@ -456,13 +490,17 @@ func GOST28147_IMIT(key, msg []byte) ([]byte, error) {
 	if len(key) != gost28147.KeySize {
 		return nil, fmt.Errorf("gost: GOST28147_IMIT key must be %d bytes, got %d", gost28147.KeySize, len(key))
 	}
+
 	const meshThreshold = 1024
+
 	sbox := gost28147.SboxDefault
 
 	currentKey := make([]byte, gost28147.KeySize)
 	copy(currentKey, key)
-	prev := make([]byte, gost28147.BlockSize) // zero IV
+
+	prev := make([]byte, gost28147.BlockSize) // zero IV.
 	c := gost28147.NewCipher(currentKey, sbox)
+
 	mac, err := c.NewMAC(gost28147.BlockSize, prev)
 	if err != nil {
 		return nil, fmt.Errorf("gost: GOST28147_IMIT NewMAC: %w", err)
@@ -475,23 +513,31 @@ func GOST28147_IMIT(key, msg []byte) ([]byte, error) {
 			// mesh the key, then rebuild cipher and MAC preserving prev.
 			state := mac.Sum(nil)
 			copy(prev, state)
+
 			newKey := make([]byte, gost28147.KeySize)
 			for j := range 4 {
 				c.Decrypt(newKey[j*gost28147.BlockSize:(j+1)*gost28147.BlockSize],
 					cryptoProKeyMeshingKey[j*gost28147.BlockSize:(j+1)*gost28147.BlockSize])
 			}
+
 			copy(currentKey, newKey)
+
 			c = gost28147.NewCipher(currentKey, sbox)
+
 			mac, err = c.NewMAC(gost28147.BlockSize, prev)
 			if err != nil {
 				return fmt.Errorf("gost: GOST28147_IMIT NewMAC after mesh: %w", err)
 			}
+
 			count = 0
 		}
+
 		if _, werr := mac.Write(blk); werr != nil {
 			return fmt.Errorf("gost: GOST28147_IMIT Write: %w", werr)
 		}
+
 		count += gost28147.BlockSize
+
 		return nil
 	}
 
@@ -507,9 +553,11 @@ func GOST28147_IMIT(key, msg []byte) ([]byte, error) {
 		// Inputs > 8 bytes never reach here.
 		last := make([]byte, gost28147.BlockSize)
 		copy(last, msg)
+
 		if err := processBlock(last); err != nil {
 			return nil, err
 		}
+
 		if err := processBlock(make([]byte, gost28147.BlockSize)); err != nil {
 			return nil, err
 		}
@@ -519,9 +567,11 @@ func GOST28147_IMIT(key, msg []byte) ([]byte, error) {
 				return nil, err
 			}
 		}
+
 		if remaining > 0 {
 			last := make([]byte, gost28147.BlockSize)
 			copy(last, msg[nBlocks*gost28147.BlockSize:])
+
 			if err := processBlock(last); err != nil {
 				return nil, err
 			}
@@ -529,6 +579,7 @@ func GOST28147_IMIT(key, msg []byte) ([]byte, error) {
 	}
 
 	full := mac.Sum(nil)
+
 	return full[:4], nil
 }
 
@@ -539,14 +590,18 @@ func GOST28147_IMIT(key, msg []byte) ([]byte, error) {
 // Uses the id-tc26-gost-3410-2012-512-paramSetA curve.
 func VKO2012_512(prvRaw, pubRaw, ukmRaw []byte) ([]byte, error) {
 	c := gost3410.CurveIdtc26gost341012512paramSetA()
+
 	prv, err := gost3410.NewPrivateKey(c, prvRaw)
 	if err != nil {
 		return nil, err
 	}
+
 	pub, err := gost3410.NewPublicKey(c, pubRaw)
 	if err != nil {
 		return nil, err
 	}
+
 	ukm := gost3410.NewUKM(ukmRaw)
+
 	return prv.KEK2012512(pub, ukm)
 }

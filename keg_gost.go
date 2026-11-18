@@ -39,12 +39,14 @@ func KEG2012_256(curve *Curve, serverPubRaw, clientPrivRaw, ukmSource []byte) ([
 	// If ukmSource[:16] is all zeros, set realUKM[15] = 1 (gost_keg:140-142).
 	realUKM := make([]byte, 16)
 	allZero := true
+
 	for _, b := range ukmSource[:16] {
 		if b != 0 {
 			allZero = false
 			break
 		}
 	}
+
 	if allZero {
 		realUKM[15] = 1
 	} else {
@@ -57,11 +59,14 @@ func KEG2012_256(curve *Curve, serverPubRaw, clientPrivRaw, ukmSource []byte) ([
 	if err != nil {
 		return out, fmt.Errorf("gost.KEG2012_256: invalid private key: %w", err)
 	}
+
 	pub, err := gost3410.NewPublicKey(curve.inner, serverPubRaw)
 	if err != nil {
 		return out, fmt.Errorf("gost.KEG2012_256: invalid public key: %w", err)
 	}
+
 	ukmBig := gost3410.NewUKM(realUKM)
+
 	tmpkey, err := prv.KEK2012256(pub, ukmBig)
 	if err != nil {
 		return out, fmt.Errorf("gost.KEG2012_256: KEK2012256: %w", err)
@@ -71,6 +76,7 @@ func KEG2012_256(curve *Curve, serverPubRaw, clientPrivRaw, ukmSource []byte) ([
 	// Reuses the KDFTree2012_256 helper from kdftree_gost.go.
 	expkeys := KDFTree2012_256(tmpkey, []byte("kdf tree"), ukmSource[16:24], 64)
 	copy(out[:], expkeys)
+
 	return out, nil
 }
 
