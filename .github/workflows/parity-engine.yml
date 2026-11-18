@@ -1,0 +1,131 @@
+name: parity-engine
+
+# Runs the parity suite of this repo against go-gostcrypto with the GOST
+# reference engine (gost-engine) built from source, so the live-engine
+# differentials (today parity/gost28147cnt's TestDiff_GostEngineCLI, which
+# shells out to `openssl enc -engine gost`) run instead of self-skipping.
+#
+# One job per gost-engine version named in .github/gost-engine.json: the
+# source of the ported vectors and the latest release (one job if both name
+# the same tag). See docs/engine-vectors.md for what the two mean.
+#
+# Callers:
+#   - go-gostcrypto's parity workflow, on its own pull requests and pushes,
+#     to test the go-gostcrypto commit under review. `uses:` takes no
+#     expressions, so it always runs this file from compat master; its
+#     compat-ref input still selects the compat code, the setup-gost-engine
+#     action and the versions file that get checked out.
+#   - engine.yml in this repo, when a change touches the engine plumbing.
+#
+# Layout, same as go-gostcrypto's parity job: go-gostcrypto in ./gostcrypto,
+# this repo in ./gostcrypto-compat, and a go.work spanning both, so the tests
+# build against the go-gostcrypto checkout rather than the release pinned in
+# go.mod. compat's own replaces (gogost, aead/cmac) still apply.
+
+on:
+  workflow_call:
+    inputs:
+      compat-ref:
+        description: "go-gostcrypto-compat ref (branch/tag/sha) to test with: the tests, the action and the versions file"
+        type: string
+        default: master
+      gostcrypto-ref:
+        description: "tarantool/go-gostcrypto ref to test; empty: the caller's repository at the ref of the triggering event"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  versions:
+    name: gost-engine versions
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: tarantool/go-gostcrypto-compat
+          ref: ${{ inputs.compat-ref }}
+          path: gostcrypto-compat
+          sparse-checkout: .github/gost-engine.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      # {"include": [{"ref": <tag>, "role": "vectors" | "latest" |
+      # "vectors, latest"}, ...]}, one entry per distinct tag. A ref that is
+      # not a plain tag or branch name fails here rather than in the build.
+      - name: build the matrix from .github/gost-engine.json
+        id: matrix
+        run: |
+          set -euo pipefail
+          matrix=$(jq -c '
+            [{role: "vectors", ref: .vectors}, {role: "latest", ref: .latest}]
+            | if all(.[]; .ref | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._/-]*$"))
+              then .
+              else error("vectors and latest must each name a gost-engine tag")
+              end
+            | group_by(.ref)
+            | map({ref: .[0].ref, role: (map(.role) | join(", "))})
+            | {include: .}
+          ' gostcrypto-compat/.github/gost-engine.json)
+          echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
+
+  parity-engine:
+    name: gost-engine ${{ matrix.ref }} (${{ matrix.role }})
+    needs: versions
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.versions.outputs.matrix) }}
+    steps:
+      # The go-gostcrypto to test -> ./gostcrypto. In a called workflow the
+      # github context is the caller's, so a checkout without `repository`
+      # takes the caller's repository at the ref and sha of the triggering
+      # event. For go-gostcrypto's parity workflow that is the commit under
+      # review, and the caller has nothing to pass. A caller in this repo
+      # would get compat itself there, so it names a go-gostcrypto ref and
+      # tarantool/go-gostcrypto is checked out at it. An explicit input,
+      # rather than guessing from github.repository, keeps forks of
+      # go-gostcrypto testing their own commit.
+      - name: checkout go-gostcrypto (the caller's commit)
+        if: inputs.gostcrypto-ref == ''
+        uses: actions/checkout@v4
+        with:
+          path: gostcrypto
+          persist-credentials: false
+
+      - name: checkout go-gostcrypto (tarantool/go-gostcrypto@${{ inputs.gostcrypto-ref }})
+        if: inputs.gostcrypto-ref != ''
+        uses: actions/checkout@v4
+        with:
+          repository: tarantool/go-gostcrypto
+          ref: ${{ inputs.gostcrypto-ref }}
+          path: gostcrypto
+          persist-credentials: false
+
+      # The parity tests, the vendored gogost reference and the
+      # setup-gost-engine action -> ./gostcrypto-compat.
+      - uses: actions/checkout@v4
+        with:
+          repository: tarantool/go-gostcrypto-compat
+          ref: ${{ inputs.compat-ref }}
+          path: gostcrypto-compat
+          persist-credentials: false
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - uses: ./gostcrypto-compat/.github/actions/setup-gost-engine
+        with:
+          ref: ${{ matrix.ref }}
+
+      - name: use the go-gostcrypto checkout, not the released pin
+        working-directory: gostcrypto-compat
+        run: go work init . ../gostcrypto
+
+      - name: parity against the live gost-engine
+        working-directory: gostcrypto-compat
+        run: go test ./...

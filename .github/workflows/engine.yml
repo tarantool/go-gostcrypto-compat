@@ -1,0 +1,41 @@
+name: engine
+
+# Runs parity-engine.yml against go-gostcrypto master and this commit of
+# compat, when a change touches the gost-engine plumbing: the
+# setup-gost-engine action, the versions file or the workflows that use
+# them. Without it a broken engine build or matrix would first show up in
+# go-gostcrypto's pull requests, which take all three from compat master.
+#
+# ci.yml skips parity on purpose: against the go-gostcrypto default branch it
+# goes red whenever a go-gostcrypto API change sits on a branch. That still
+# holds here, and is fine: this workflow is path-filtered, so it runs on few
+# changes, and what it tests is the engine plumbing, not the parity of a
+# go-gostcrypto change, which go-gostcrypto's own parity workflow gates.
+
+on:
+  pull_request:
+    paths:
+      - .github/actions/setup-gost-engine/**
+      - .github/gost-engine.json
+      - .github/workflows/engine.yml
+      - .github/workflows/parity-engine.yml
+  push:
+    branches: [master]
+    paths:
+      - .github/actions/setup-gost-engine/**
+      - .github/gost-engine.json
+      - .github/workflows/engine.yml
+      - .github/workflows/parity-engine.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  parity-engine:
+    uses: ./.github/workflows/parity-engine.yml
+    with:
+      # The commit this run is for (on a pull request, its merge commit), so
+      # the tests, action and versions file match the workflow file that runs.
+      compat-ref: ${{ github.sha }}
+      gostcrypto-ref: master
