@@ -1,0 +1,171 @@
+name: Bump gost-engine
+
+# Daily check for a new gost-engine release. When one is out, move the
+# `latest` entry of .github/gost-engine.json to it, validate it with the
+# parity suite against that engine built from source and go-gostcrypto
+# master, and open (or update) a PR. The suite is a hard gate: if it fails
+# against the new engine the job fails and no PR is opened. Only `latest`
+# moves; `vectors` stays until the vectors are re-ported by hand, see
+# docs/engine-vectors.md.
+#
+# The PR is opened with GITHUB_TOKEN, and events from it start no workflows,
+# so engine.yml does not run on the PR: the validation here is its check.
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Check and validate only — do not commit, push, or open a PR."
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: bump-gost-engine
+  cancel-in-progress: false
+
+env:
+  GO_VERSION: 1.24
+  BOT_NAME: "github-actions[bot]"
+  BOT_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
+  PR_BRANCH: automation/bump-gost-engine
+  VERSIONS: .github/gost-engine.json
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      # Same layout as parity-engine.yml: this repo in ./gostcrypto-compat,
+      # go-gostcrypto in ./gostcrypto, the engine clone in ./gost-engine.
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          path: gostcrypto-compat
+          persist-credentials: false
+
+      # Compare the `latest` entry against the newest gost-engine release.
+      # releases/latest skips drafts and prereleases; sort -V | tail -1 guards
+      # against a downgrade. The tag goes into the file, the build and the PR,
+      # so anything but v and dot-separated numbers is refused.
+      - name: resolve latest gost-engine
+        id: resolve
+        working-directory: gostcrypto-compat
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          current=$(jq -r .latest "$VERSIONS")
+          vectors=$(jq -r .vectors "$VERSIONS")
+          latest=$(gh api repos/gost-engine/engine/releases/latest --jq .tag_name)
+          if ! [[ $latest =~ ^v[0-9]+(\.[0-9]+)*$ ]]; then
+            echo "::error::unexpected gost-engine release tag: ${latest}"
+            exit 1
+          fi
+          {
+            echo "current=${current}"
+            echo "latest=${latest}"
+            echo "vectors=${vectors}"
+          } >> "$GITHUB_OUTPUT"
+          if [ "$latest" != "$current" ] && \
+             [ "$(printf '%s\n%s\n' "$current" "$latest" | sort -V | tail -1)" = "$latest" ]; then
+            echo "::notice::gost-engine ${current} -> ${latest}"
+            echo "bump=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::gost-engine up to date at ${current}"
+            echo "bump=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: bump the latest entry
+        if: steps.resolve.outputs.bump == 'true'
+        working-directory: gostcrypto-compat
+        env:
+          LATEST: ${{ steps.resolve.outputs.latest }}
+        run: |
+          set -euo pipefail
+          jq --arg latest "$LATEST" '.latest = $latest' "$VERSIONS" > "$RUNNER_TEMP/gost-engine.json"
+          mv "$RUNNER_TEMP/gost-engine.json" "$VERSIONS"
+
+      - name: check for changes
+        id: changes
+        working-directory: gostcrypto-compat
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain "$VERSIONS")" ]; then
+            echo "no version change"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git diff -- "$VERSIONS"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: checkout go-gostcrypto master
+        if: steps.changes.outputs.changed == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: tarantool/go-gostcrypto
+          ref: master
+          path: gostcrypto
+          persist-credentials: false
+
+      - name: setup Go
+        if: steps.changes.outputs.changed == 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: build gost-engine ${{ steps.resolve.outputs.latest }}
+        if: steps.changes.outputs.changed == 'true'
+        uses: ./gostcrypto-compat/.github/actions/setup-gost-engine
+        with:
+          ref: ${{ steps.resolve.outputs.latest }}
+
+      # The go.work stays out of the PR: add-paths below commits the
+      # versions file only.
+      - name: use the go-gostcrypto master checkout, not the released pin
+        if: steps.changes.outputs.changed == 'true'
+        working-directory: gostcrypto-compat
+        run: go work init . ../gostcrypto
+
+      - name: validate parity against the new gost-engine
+        if: steps.changes.outputs.changed == 'true'
+        working-directory: gostcrypto-compat
+        run: go test ./... -count=1
+
+      - name: create pull request
+        if: steps.changes.outputs.changed == 'true' && inputs.dry_run != true
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ github.token }}
+          path: gostcrypto-compat
+          branch: ${{ env.PR_BRANCH }}
+          base: master
+          add-paths: |
+            .github/gost-engine.json
+          commit-message: |
+            ci: bump the latest gost-engine to ${{ steps.resolve.outputs.latest }}
+
+            Automated bump of the latest gost-engine release in
+            .github/gost-engine.json.
+
+            ${{ steps.resolve.outputs.current }} -> ${{ steps.resolve.outputs.latest }}.
+          committer: "${{ env.BOT_NAME }} <${{ env.BOT_EMAIL }}>"
+          author: "${{ env.BOT_NAME }} <${{ env.BOT_EMAIL }}>"
+          title: "ci: bump the latest gost-engine to ${{ steps.resolve.outputs.latest }}"
+          body: |
+            Automated bump of the latest gost-engine release in
+            `.github/gost-engine.json`.
+
+            `${{ steps.resolve.outputs.current }}` → `${{ steps.resolve.outputs.latest }}`.
+
+            Validated by the parity suite against gost-engine
+            `${{ steps.resolve.outputs.latest }}`, built from source, and
+            go-gostcrypto master. The vector source stays at
+            `${{ steps.resolve.outputs.vectors }}`; moving it means re-porting
+            the vectors, see `docs/engine-vectors.md`. Release notes:
+            https://github.com/gost-engine/engine/releases/tag/${{ steps.resolve.outputs.latest }}
+          delete-branch: true
