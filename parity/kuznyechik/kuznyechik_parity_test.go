@@ -15,6 +15,8 @@ import (
 // gostcryptocompat.Kuznyechik{Encrypt,Decrypt} black-box oracle over random
 // keys and blocks, requiring byte-exact agreement plus round-trip identity.
 func TestDiffAgainstGost(t *testing.T) {
+	t.Parallel()
+
 	rng := rand.New(rand.NewSource(0x6b757a))
 
 	for iter := range 4096 {
@@ -64,6 +66,8 @@ func TestDiffAgainstGost(t *testing.T) {
 // It both anchors the literal expected ciphertext and diffs Decrypt on that
 // pinned ciphertext so the function is self-contained as a spec anchor.
 func TestDiffKAT(t *testing.T) {
+	t.Parallel()
+
 	key, _ := hex.DecodeString("8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef")
 	pt, _ := hex.DecodeString("1122334455667700ffeeddccbbaa9988")
 	// wantCT: RFC 7801 §5.5 / GOST R 34.12-2015 §A.1 Kuznyechik ECB test vector.

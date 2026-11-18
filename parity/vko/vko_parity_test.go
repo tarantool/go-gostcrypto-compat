@@ -93,6 +93,8 @@ func oracleCurve256A() *gogost3410.Curve {
 // VKO-05: the large-UKM case uses a 32-byte UKM on tc26-256-A so that
 // u = UKM*4 can exceed fullOrder = 4*Q, forcing the Mod branch.
 func TestDifferential(t *testing.T) {
+	t.Parallel()
+
 	c2001 := vko.Curve2001Test()
 
 	d1 := mustHexF(t, "1df129e43dab345b68f6a852f4162dc69f36b2f84717d08755cc5c44150bf928")
@@ -251,6 +253,8 @@ func TestDifferential(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			got, err := clean(tc.v, tc.prv, tc.peer, tc.ukm)
 			if err != nil {
 				t.Fatalf("clean-room: %v", err)

@@ -31,6 +31,8 @@ import (
 // under both impls (deterministic surface), and asserts that signing with the
 // pinned nonce reproduces the KAT signature byte-for-byte (SIG-01).
 func TestDiff_PinnedVector(t *testing.T) {
+	t.Parallel()
+
 	newCurve := testParamSetCurve()
 	refCurve := gost.GOST2001TestParamSetCurve()
 
@@ -108,6 +110,8 @@ func TestDiff_PinnedVector(t *testing.T) {
 // Because a fixed nonce is used, the raw signature bytes are also byte-compared
 // (SIG-01: with equal nonce both impls produce byte-identical output).
 func TestDiff_CrossVerifyRandom(t *testing.T) {
+	t.Parallel()
+
 	newCurve := testParamSetCurve()
 	refCurve := gost.GOST2001TestParamSetCurve()
 
@@ -183,6 +187,8 @@ func TestDiff_CrossVerifyRandom(t *testing.T) {
 //
 //	(third_party/gogost/gost3410/params.go:320 — same constants).
 func TestDiff_Pinned512_A2(t *testing.T) {
+	t.Parallel()
+
 	// Clean-room side: the A.2 test param set curve (constructed directly —
 	// not OID-registered, so CurveByOID is not used here).
 	newCurve := stdParamSet512Curve()
@@ -277,6 +283,8 @@ func TestDiff_Pinned512_A2(t *testing.T) {
 // byte-compared (fixed nonce → deterministic output). SIG-02: exercises the
 // 64-byte halves in SignDigest's fillBE / PublicKeyRaw's putLE padding paths.
 func TestDiff_CrossVerify512(t *testing.T) {
+	t.Parallel()
+
 	newCurve := cleanroomCurve512A(t)
 	refCurve := refCurve512A(t)
 
@@ -337,6 +345,8 @@ func TestDiff_CrossVerify512(t *testing.T) {
 // oracle: both impls must agree on rejection for malformed / out-of-range
 // inputs (SIG-03).
 func TestDiff_RejectionParity(t *testing.T) {
+	t.Parallel()
+
 	newCurve := testParamSetCurve()
 	refCurve := gost.GOST2001TestParamSetCurve()
 
@@ -346,6 +356,8 @@ func TestDiff_RejectionParity(t *testing.T) {
 
 	// 1. Wrong-length sig: both must reject.
 	t.Run("wrong_len_sig_short", func(t *testing.T) {
+		t.Parallel()
+
 		shortSig := sig[:len(sig)-1]
 		if VerifyDigest(newCurve, pub, dig, shortSig) {
 			t.Fatal("new accepted short sig")
@@ -356,6 +368,8 @@ func TestDiff_RejectionParity(t *testing.T) {
 		}
 	})
 	t.Run("wrong_len_sig_long", func(t *testing.T) {
+		t.Parallel()
+
 		longSig := append(append([]byte(nil), sig...), 0x00)
 		if VerifyDigest(newCurve, pub, dig, longSig) {
 			t.Fatal("new accepted long sig")
@@ -368,6 +382,8 @@ func TestDiff_RejectionParity(t *testing.T) {
 
 	// 2. Wrong-length pubRaw: both must reject.
 	t.Run("wrong_len_pub_short", func(t *testing.T) {
+		t.Parallel()
+
 		shortPub := pub[:len(pub)-1]
 		if VerifyDigest(newCurve, shortPub, dig, sig) {
 			t.Fatal("new accepted short pub")
@@ -378,6 +394,8 @@ func TestDiff_RejectionParity(t *testing.T) {
 		}
 	})
 	t.Run("wrong_len_pub_long", func(t *testing.T) {
+		t.Parallel()
+
 		longPub := append(append([]byte(nil), pub...), 0x00)
 		if VerifyDigest(newCurve, longPub, dig, sig) {
 			t.Fatal("new accepted long pub")
@@ -390,6 +408,8 @@ func TestDiff_RejectionParity(t *testing.T) {
 
 	// 3. r == 0 (second half zeroed): both must reject.
 	t.Run("r_zero", func(t *testing.T) {
+		t.Parallel()
+
 		ps := newCurve.PointSize()
 
 		badSig := append([]byte(nil), sig...)
@@ -408,6 +428,8 @@ func TestDiff_RejectionParity(t *testing.T) {
 
 	// 4. s == 0 (first half zeroed): both must reject.
 	t.Run("s_zero", func(t *testing.T) {
+		t.Parallel()
+
 		ps := newCurve.PointSize()
 
 		badSig := append([]byte(nil), sig...)
@@ -428,6 +450,8 @@ func TestDiff_RejectionParity(t *testing.T) {
 	// The clean-room calls IsOnCurve; gogost skips the check but still rejects
 	// in practice because forged R ≠ r for an arbitrary off-curve point.
 	t.Run("off_curve_pub_allzero", func(t *testing.T) {
+		t.Parallel()
+
 		allZeroPub := make([]byte, len(pub))
 		if VerifyDigest(newCurve, allZeroPub, dig, sig) {
 			t.Fatal("new accepted all-zero pub")
@@ -438,6 +462,8 @@ func TestDiff_RejectionParity(t *testing.T) {
 		}
 	})
 	t.Run("off_curve_pub_flipped", func(t *testing.T) {
+		t.Parallel()
+
 		flipped := append([]byte(nil), pub...)
 
 		flipped[0] ^= 0x01
@@ -452,6 +478,8 @@ func TestDiff_RejectionParity(t *testing.T) {
 
 	// 6. Tampered signature bytes (not just digest): both must reject.
 	t.Run("tampered_sig_byte", func(t *testing.T) {
+		t.Parallel()
+
 		badSig := append([]byte(nil), sig...)
 
 		badSig[0] ^= 0x01
@@ -466,6 +494,8 @@ func TestDiff_RejectionParity(t *testing.T) {
 
 	// 7. Nil inputs: both must reject (no panic).
 	t.Run("nil_sig", func(t *testing.T) {
+		t.Parallel()
+
 		if VerifyDigest(newCurve, pub, dig, nil) {
 			t.Fatal("new accepted nil sig")
 		}
@@ -475,6 +505,8 @@ func TestDiff_RejectionParity(t *testing.T) {
 		}
 	})
 	t.Run("nil_pub", func(t *testing.T) {
+		t.Parallel()
+
 		if VerifyDigest(newCurve, nil, dig, sig) {
 			t.Fatal("new accepted nil pub")
 		}

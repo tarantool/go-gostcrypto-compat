@@ -24,6 +24,8 @@ func mustHexMGM(t *testing.T, s string) []byte {
 
 // TestMGM_EngineVectors ports the one-shot AEAD vectors from tmp/engine/test_mgm.c.
 func TestMGM_EngineVectors(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name    string
 		key     []byte
@@ -85,6 +87,8 @@ func TestMGM_EngineVectors(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			var (
 				block cipher.Block
 				aead  cipher.AEAD

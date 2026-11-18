@@ -14,6 +14,8 @@ import (
 // its CryptoPro-A ECB output against the clean-room impl over the pinned
 // vector and a spread of deterministic key/block pairs.
 func TestDiff_InternalGostOracle(t *testing.T) {
+	t.Parallel()
+
 	keys := [][]byte{
 		mustHex(t, "00112233445566778899aabbccddeeff102132435465768798a9bacbdcedf0e1"),
 	}
@@ -86,6 +88,8 @@ func TestDiff_InternalGostOracle(t *testing.T) {
 //
 // Findings: G89-02.
 func TestDiff_TC26Z_ECB(t *testing.T) {
+	t.Parallel()
+
 	keys := [][]byte{
 		// All-zeros key (first trivial KAT input).
 		mustHex(t, "0000000000000000000000000000000000000000000000000000000000000000"),

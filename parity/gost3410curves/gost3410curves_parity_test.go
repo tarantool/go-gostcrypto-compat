@@ -84,8 +84,12 @@ func assertBigEq(t *testing.T, field string, a, b *big.Int) {
 // Additionally it asserts the absolute tc.pointSize anchor from allOIDs
 // (CRV-04).
 func TestCurveConstantsDifferential(t *testing.T) {
+	t.Parallel()
+
 	for _, tc := range allOIDs {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			mine := mustCurve(t, tc.oid)
 			ref := mustGogostCurve(t, tc.oid)
 
@@ -146,8 +150,12 @@ func TestCurveConstantsDifferential(t *testing.T) {
 // for tc26-512-{A,B,C}. Name identity is therefore intentionally NOT asserted
 // across the two implementations.
 func TestCrossCheckInternalGost(t *testing.T) {
+	t.Parallel()
+
 	for _, tc := range allOIDs {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			mine := mustCurve(t, tc.oid)
 
 			ref, err := gost.CurveByOID(oidToASN1(t, tc.oid))
@@ -179,6 +187,8 @@ func TestCrossCheckInternalGost(t *testing.T) {
 // vertical tangent, p+(-p) identity) and Double with a known on-curve point
 // diffed against gogost's Exp, as coverage for B-reading paths (CRV-05).
 func TestPointEdgeCases(t *testing.T) {
+	t.Parallel()
+
 	// Use CryptoPro-A (OID 1.2.643.2.2.35.1) as a representative 256-bit curve.
 	mine := mustCurve(t, "1.2.643.2.2.35.1")
 	ref := mustGogostCurve(t, "1.2.643.2.2.35.1")

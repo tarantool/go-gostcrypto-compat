@@ -31,6 +31,8 @@ import (
 // src: tmp/engine/test/04-pkey.t:45-141 (key print tests only; no raw sign KAT)
 // KAT from RFC 7091 §A.1 — same underlying algorithm.
 func TestGost_R342001_EngineVectors(t *testing.T) {
+	t.Parallel()
+
 	t.Skip("tmp/engine/test/04-pkey.t:45 — engine pkey tests use PEM key-file loading and text-output matching; no raw sign/verify KAT extractable without running OpenSSL. RFC 7091 §A.1 vectors already covered in primitives_test.go TestGost_R341012_Verify. (src: test/04-pkey.t:45)")
 }
 
@@ -40,6 +42,8 @@ func TestGost_R342001_EngineVectors(t *testing.T) {
 //
 // src: tmp/engine/test/04-pkey.t:265-317 (512-bit paramsets in derive subtest)
 func TestGost_R341012_EngineVectors_Sign512(t *testing.T) {
+	t.Parallel()
+
 	t.Skip("tmp/engine/test/04-pkey.t:265 — R 34.10-2012-512 sign/verify out of scope; our wrapper only exposes 256-bit sign (R341012Sign/Verify). (src: test/04-pkey.t:265)")
 }
 
@@ -54,6 +58,8 @@ func TestGost_R341012_EngineVectors_Sign512(t *testing.T) {
 //
 // src: tmp/engine/test/04-pkey.t:160-358
 func TestGost_VKO2001_EngineVectors(t *testing.T) {
+	t.Parallel()
+
 	t.Skip("tmp/engine/test/04-pkey.t:160 — VKO 'derive' subtest verifies via sha256(DER pubkey), not raw shared key bytes; PEM keys require DER parsing to extract LE raw privkey for our VKO2001 wrapper. No clean portable KAT available. (src: test/04-pkey.t:160)")
 }
 
@@ -79,6 +85,8 @@ func TestGost_VKO2001_EngineVectors(t *testing.T) {
 //
 // src: tmp/engine/test/04-pkey.t:162-171
 func TestGost_VKO2001_TestParamSet_RFC(t *testing.T) {
+	t.Parallel()
+
 	t.Skip("tmp/engine/test/04-pkey.t:162 — expected value is sha256 of derived key, not raw derived key; cannot assert against VKO2001 output without running OpenSSL to compute the raw key first. (src: test/04-pkey.t:171)")
 }
 
@@ -99,6 +107,8 @@ func TestGost_VKO2001_TestParamSet_RFC(t *testing.T) {
 //
 //	test/04-pkey.t engine validation.
 func TestGost_R342001_Verify_RFC7091(t *testing.T) {
+	t.Parallel()
+
 	// Private key in LE encoding (same as gogost TestRFCVectors).
 	prvRaw, err := hex.DecodeString("283bec9198ce191dee7e39491f96601bc1729ad39d35ed10beb99b78de9a927a")
 	if err != nil {

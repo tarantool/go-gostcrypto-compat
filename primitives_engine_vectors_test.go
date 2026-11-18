@@ -26,6 +26,8 @@ import (
 //
 // src: tmp/engine/test/03-encrypt.t:140-195
 func TestGost_GOST28147_CNT_EngineVectors(t *testing.T) {
+	t.Parallel()
+
 	// key = '0123456789ABCDEF' x 4 = 32 bytes
 	// src: tmp/engine/test/03-encrypt.t:140
 	key, err := hex.DecodeString("0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF")
@@ -90,6 +92,8 @@ func TestGost_GOST28147_CNT_EngineVectors(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			if tc.skip != "" {
 				t.Skipf("%s (src: %s)", tc.skip, tc.src)
 			}
@@ -136,6 +140,8 @@ func TestGost_GOST28147_CNT_EngineVectors(t *testing.T) {
 //
 // src: tmp/engine/test/02-mac.t:158-207
 func TestGost_GOST28147_IMIT_EngineVectors(t *testing.T) {
+	t.Parallel()
+
 	// key = "0123456789abcdef" x 2 (32 bytes raw ASCII)
 	// src: tmp/engine/test/02-mac.t:51
 	key := []byte("0123456789abcdef0123456789abcdef")
@@ -330,6 +336,8 @@ func TestGost_GOST28147_IMIT_EngineVectors(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			if tc.skip != "" {
 				t.Skipf("%s (src: %s)", tc.skip, tc.src)
 			}
@@ -368,6 +376,8 @@ func TestGost_GOST28147_IMIT_EngineVectors(t *testing.T) {
 // raw gost28147.MAC omits. Input exceeds 1024 bytes so meshing is exercised.
 // src: tmp/engine/test/02-mac.t:181-187
 func TestGost_GOST28147_IMIT_Wrapper_KeyMeshing(t *testing.T) {
+	t.Parallel()
+
 	key := []byte("0123456789abcdef0123456789abcdef")
 	testbig := []byte(strings.Repeat(strings.Repeat("12345670", 8)+"\n", 4096))
 
@@ -393,6 +403,8 @@ func TestGost_GOST28147_IMIT_Wrapper_KeyMeshing(t *testing.T) {
 // gost-mac on "12345670"x128 gives 2ee8d13d.
 // src: tmp/engine/test/02-mac.t:158-164
 func TestGost_GOST28147_IMIT_Wrapper_NoMeshing(t *testing.T) {
+	t.Parallel()
+
 	key := []byte("0123456789abcdef0123456789abcdef")
 	testdata := []byte(strings.Repeat("12345670", 128))
 

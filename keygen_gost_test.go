@@ -17,6 +17,8 @@ import (
 // source.  The expected values were obtained by running the function once with
 // the same reader and recording the output.
 func TestGenerateEphemeralKey_PinnedRand(t *testing.T) {
+	t.Parallel()
+
 	// 32 bytes of deterministic "random" input — enough for a 256-bit key.
 	seed := make([]byte, 32)
 	for i := range seed {
@@ -65,6 +67,8 @@ func TestGenerateEphemeralKey_PinnedRand(t *testing.T) {
 // is exactly the public key derived from the returned privRaw via
 // gost3410.NewPrivateKey(...).PublicKey().Raw().
 func TestGenerateEphemeralKey_PubMatchesPriv(t *testing.T) {
+	t.Parallel()
+
 	curve := &Curve{inner: gost3410.CurveIdtc26gost341012256paramSetA()}
 
 	seed := []byte{

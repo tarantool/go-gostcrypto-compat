@@ -56,6 +56,8 @@ func xorKeyStreamChunked(s cipher.Stream, dst, src []byte, chunkSeed uint8) {
 //   - chunked XORKeyStream over a fixed set of chunk shapes (CTRA-01/04)
 //   - in-place XORKeyStream dst==src (CTRA-06)
 func TestDiff_CTRACPKM_vs_Oracle(t *testing.T) {
+	t.Parallel()
+
 	key := mustHex(t, "8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef")
 
 	type tc struct {
@@ -88,6 +90,8 @@ func TestDiff_CTRACPKM_vs_Oracle(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+
 			iv := make([]byte, c.ivLen)
 			copy(iv, []byte{0x12, 0x34, 0x56, 0x78})
 
@@ -290,6 +294,8 @@ func FuzzDiff_CTRACPKM_vs_Oracle(f *testing.F) {
 // TestDiff_PlainCTR_vs_Oracle checks NewCTR (plain CTR) against the oracle.
 // CTRA-05: covers both Kuznyechik (16-byte block) and Magma (8-byte block).
 func TestDiff_PlainCTR_vs_Oracle(t *testing.T) {
+	t.Parallel()
+
 	key := mustHex(t, "8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef")
 
 	cases := []struct {
@@ -311,6 +317,8 @@ func TestDiff_PlainCTR_vs_Oracle(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+
 			for _, n := range []int{1, 8, 9, 16, 33, 200, 4097} {
 				plain := make([]byte, n)
 				for i := range plain {

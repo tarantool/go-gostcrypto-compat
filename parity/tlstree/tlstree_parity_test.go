@@ -15,6 +15,8 @@ import (
 // D2 zero-key startup trap; the clean-room impl is never primed because it must
 // not carry that bug.
 func Test_TLSTree_Conformance(t *testing.T) {
+	t.Parallel()
+
 	suites := []struct {
 		name   string
 		newRef func([]byte) *gostref.TLSTree
@@ -58,8 +60,12 @@ func Test_TLSTree_Conformance(t *testing.T) {
 // facade to silently accept a bad-length key while the clean-room still panics.
 // Finding: TLS-01.
 func Test_TLSTree_BadMasterKeyLength(t *testing.T) {
+	t.Parallel()
+
 	for _, n := range []int{0, 16, 31, 33, 64} {
 		t.Run(fmt.Sprintf("len=%d", n), func(t *testing.T) {
+			t.Parallel()
+
 			bad := make([]byte, n)
 			mustPanic := func(name string, fn func()) {
 				t.Helper()
@@ -83,6 +89,8 @@ func Test_TLSTree_BadMasterKeyLength(t *testing.T) {
 // Test_TLSTree_KAT_vs_Oracle re-pins the guide's exact Kuznyechik seq=63 hex
 // vector against both the oracle (primed) and the clean-room impl (unprimed).
 func Test_TLSTree_KAT_vs_Oracle(t *testing.T) {
+	t.Parallel()
+
 	kFF := bytes.Repeat([]byte{0xFF}, 32)
 	want := []byte{
 		0x50, 0x76, 0x42, 0xd9, 0x58, 0xc5, 0x20, 0xc6,

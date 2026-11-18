@@ -28,6 +28,8 @@ func deterministicPrivateKey(t *testing.T, curve *gost3410.Curve, seed byte) *go
 // every supported signing curve should successfully sign and verify, and a
 // tampered digest must fail verification.
 func TestCurveSignVerify_AllCurves(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name    string
 		curve   func() *gost3410.Curve
@@ -47,6 +49,8 @@ func TestCurveSignVerify_AllCurves(t *testing.T) {
 
 	for i, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			curve := tc.curve()
 			prv := deterministicPrivateKey(t, curve, byte(0x10+i))
 
@@ -99,6 +103,8 @@ func TestCurveSignVerify_AllCurves(t *testing.T) {
 // TestCurveByOID_SupportedCurvesSanity checks the supported OID mappings and
 // basic group invariants we rely on throughout the repo.
 func TestCurveByOID_SupportedCurvesSanity(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		name      string
 		oid       []int
@@ -119,6 +125,8 @@ func TestCurveByOID_SupportedCurvesSanity(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			got, err := CurveByOID(tc.oid)
 			if err != nil {
 				t.Fatalf("CurveByOID(%v): %v", tc.oid, err)
@@ -176,6 +184,8 @@ func TestCurveByOID_SupportedCurvesSanity(t *testing.T) {
 	}
 
 	t.Run("UnknownOID", func(t *testing.T) {
+		t.Parallel()
+
 		if _, err := CurveByOID([]int{1, 2, 3, 4, 5}); err == nil {
 			t.Fatal("CurveByOID accepted unknown OID")
 		}

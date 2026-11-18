@@ -42,6 +42,8 @@ func pick(name string) (Sbox, *gost.Sbox) {
 // an independent gost-engine 3.0.3 KAT on the canonical inputs, and the
 // CryptoPro-A legs are round-tripped through gogost's own UnwrapCryptoPro.
 func TestKeyWrapCryptoPro_Differential(t *testing.T) {
+	t.Parallel()
+
 	mh := func(s string) []byte { return mustHex(t, s) }
 
 	cases := []struct {
@@ -83,6 +85,8 @@ func TestKeyWrapCryptoPro_Differential(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			newSbox, repoSbox := pick(tc.sbox)
 
 			gotNew, err := KeyWrapCryptoPro(newSbox, tc.kek, tc.ukm, tc.cek)
@@ -133,10 +137,14 @@ func TestKeyWrapCryptoPro_Differential(t *testing.T) {
 // DiversifyCryptoPro — an independent orchestration-layer oracle (gogost
 // hardcodes CryptoPro-A, so it cannot anchor TC26-Z).
 func TestDiversify_Differential(t *testing.T) {
+	t.Parallel()
+
 	mh := func(s string) []byte { return mustHex(t, s) }
 
 	// TC26-Z: independent engine KAT for KEK(UKM) on the canonical inputs.
 	t.Run("tc26z-kat", func(t *testing.T) {
+		t.Parallel()
+
 		got := Diversify(SboxTC26Z, mh(katKEK), mh(katUKM))
 		if want := mh(katKEKUKM); !bytes.Equal(got, want) {
 			t.Fatalf("Diversify(tc26-z) KAT mismatch\n got: %x\nwant: %x", got, want)
@@ -154,6 +162,8 @@ func TestDiversify_Differential(t *testing.T) {
 	}
 	for _, in := range cpaInputs {
 		t.Run("cryptopro-a/"+in.name, func(t *testing.T) {
+			t.Parallel()
+
 			kek, ukm := mh(in.kek), mh(in.ukm)
 			got := Diversify(SboxCryptoProA, kek, ukm)
 
@@ -171,6 +181,8 @@ func TestDiversify_Differential(t *testing.T) {
 // a non-nil error and no output. The error texts intentionally differ; only the
 // non-nil contract is compared.
 func TestKeyWrapCryptoPro_ErrorParity(t *testing.T) {
+	t.Parallel()
+
 	valid32 := bytes.Repeat([]byte{0xAA}, 32)
 	valid8 := bytes.Repeat([]byte{0xBB}, 8)
 
@@ -190,6 +202,8 @@ func TestKeyWrapCryptoPro_ErrorParity(t *testing.T) {
 		newSbox, repoSbox := pick(sbox)
 		for _, tc := range cases {
 			t.Run(sbox+"/"+tc.name, func(t *testing.T) {
+				t.Parallel()
+
 				outNew, errNew := KeyWrapCryptoPro(newSbox, tc.kek, tc.ukm, tc.cek)
 				if errNew == nil {
 					t.Fatalf("clean-room: expected error for %s, got nil (out=%x)", tc.name, outNew)

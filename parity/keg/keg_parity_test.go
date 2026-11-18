@@ -57,6 +57,8 @@ var curve256OIDs = []struct {
 // gogost-backed reference (gostcryptocompat.KEG2012_256), the de-facto spec this
 // repo matches, on the doc's KAT inputs.
 func TestKEG2012_256_DiffOracle(t *testing.T) {
+	t.Parallel()
+
 	curve := oracleCurve(t)
 	ukm := mustHex(t, ukmHex)
 	want := mustHex(t, wantHex)
@@ -71,6 +73,8 @@ func TestKEG2012_256_DiffOracle(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			pub := mustHex(t, tc.pub)
 			priv := mustHex(t, tc.priv)
 
@@ -103,6 +107,8 @@ func TestKEG2012_256_DiffOracle(t *testing.T) {
 // TestKEG2012_256_DiffEphemeral draws fresh key material from the oracle's
 // ephemeral-key generator and checks clean-room == oracle plus pair symmetry.
 func TestKEG2012_256_DiffEphemeral(t *testing.T) {
+	t.Parallel()
+
 	curve := oracleCurve(t)
 
 	seeds := [][2][]byte{
@@ -167,12 +173,16 @@ func TestKEG2012_256_DiffEphemeral(t *testing.T) {
 //
 // Findings: KEG-01.
 func TestKEG2012_256_MultiCurve(t *testing.T) {
+	t.Parallel()
+
 	seedA := bytes.Repeat([]byte{0x11}, 32)
 	seedB := bytes.Repeat([]byte{0x22}, 32)
 	ukm := mustHex(t, ukmHex)
 
 	for _, entry := range curve256OIDs {
 		t.Run(entry.name, func(t *testing.T) {
+			t.Parallel()
+
 			oracleCrv, err := gost.CurveByOID(entry.oracle)
 			if err != nil {
 				t.Fatalf("oracle CurveByOID(%s): %v", entry.name, err)
@@ -246,6 +256,8 @@ const zeroUKMWantHex = "1f28179da81185e6019a6bc43568b9d8be3788111c50dff78b2a0425
 //
 // Findings: KEG-03.
 func TestKEG2012_256_ZeroUKM_KAT(t *testing.T) {
+	t.Parallel()
+
 	curve := oracleCurve(t)
 	want := mustHex(t, zeroUKMWantHex)
 	zeroUKM := make([]byte, 32)
@@ -285,6 +297,8 @@ func TestKEG2012_256_ZeroUKM_KAT(t *testing.T) {
 //
 // Findings: KEG-05.
 func TestKEG2012_256_ErrorParity(t *testing.T) {
+	t.Parallel()
+
 	curve := oracleCurve(t)
 	goodPub := mustHex(t, pubBHex)
 	goodPriv := mustHex(t, privAHex)
@@ -307,6 +321,8 @@ func TestKEG2012_256_ErrorParity(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			_, oracleErr := gost.KEG2012_256(curve, tc.pub, tc.priv, tc.ukm)
 
 			_, cleanErr := KEG2012_256(nil, tc.pub, tc.priv, tc.ukm)
