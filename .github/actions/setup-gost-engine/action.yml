@@ -43,11 +43,19 @@ runs:
       run: |
         git clone --branch "$GOST_ENGINE_REF" --depth 1 --recurse-submodules \
           https://github.com/gost-engine/engine.git gost-engine
+        # Since v3.0.5 gost-engine refuses to configure unless it is told
+        # where OpenSSL is (OPENSSL_ROOT_DIR) and where its engines go
+        # (OPENSSL_ENGINES_DIR). v3.0.3 looked the engines directory up in
+        # pkg-config itself; take both from there for every version.
+        openssl_root=$(pkg-config --variable=prefix libcrypto)
+        engines_dir=$(pkg-config --variable=enginesdir libcrypto)
         # The libprov submodule of v3.0.3 asks for CMake 3.0, and CMake 4 (in
         # ubuntu-latest since 26.04) refuses anything below 3.5. Later
         # releases ask for more, and the flag does not affect them.
         cmake -S gost-engine -B gost-engine/build -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+          -DOPENSSL_ROOT_DIR="$openssl_root" \
+          -DOPENSSL_ENGINES_DIR="$engines_dir"
         cmake --build gost-engine/build --config Release -j"$(nproc)"
         # Installs gost.so into OpenSSL's ENGINESDIR so `-engine gost` resolves it.
         sudo cmake --install gost-engine/build
