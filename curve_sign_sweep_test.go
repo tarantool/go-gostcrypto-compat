@@ -1,4 +1,4 @@
-package gostcryptocompat
+package gostcryptocompat //nolint:testpackage // white-box: checks the gogost curve behind Curve.inner.
 
 import (
 	"bytes"

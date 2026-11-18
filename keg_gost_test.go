@@ -1,4 +1,4 @@
-package gostcryptocompat
+package gostcryptocompat //nolint:testpackage // white-box: builds gogost keys on Curve.inner.
 
 // Tests for KEG2012_256 (R 1323565.1.020-2018 §6.4.5.1).
 //

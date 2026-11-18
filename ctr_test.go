@@ -1,4 +1,4 @@
-package gostcryptocompat
+package gostcryptocompat //nolint:testpackage // white-box: tests the unexported incCounter.
 
 // CTR mode tests.
 //

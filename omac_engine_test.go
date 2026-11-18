@@ -1,10 +1,11 @@
-package gostcryptocompat
+package gostcryptocompat_test
 
 import (
 	"encoding/hex"
 	"strings"
 	"testing"
 
+	gost "github.com/tarantool/go-gostcrypto-compat"
 	"go.stargrave.org/gogost/v7/gost3412128"
 )
 
@@ -22,7 +23,7 @@ func TestOMAC_Kuznyechik_EngineOracle(t *testing.T) {
 
 	block := gost3412128.NewCipher(key)
 
-	omac, err := NewOMAC(block, 16)
+	omac, err := gost.NewOMAC(block, 16)
 	if err != nil {
 		t.Fatalf("NewOMAC: %v", err)
 	}

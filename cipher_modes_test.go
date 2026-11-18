@@ -1,4 +1,4 @@
-package gostcryptocompat
+package gostcryptocompat_test
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"testing"
 
+	gost "github.com/tarantool/go-gostcrypto-compat"
 	"go.stargrave.org/gogost/v7/gost3412128"
 	"go.stargrave.org/gogost/v7/gost341264"
 )
@@ -176,7 +177,7 @@ func TestCipherModes_EngineVectors(t *testing.T) {
 				"dffd07ec813636460c4f3b743423163e"+
 				"6409a9c282fac8d469d221e7fbd6de5d")
 
-		ctr, err := NewCTRACPKM(func(k []byte) cipher.Block { return gost3412128.NewCipher(k) }, keyKuz, iv, 32)
+		ctr, err := gost.NewCTRACPKM(func(k []byte) cipher.Block { return gost3412128.NewCipher(k) }, keyKuz, iv, 32)
 		if err != nil {
 			t.Fatalf("NewCTRACPKM: %v", err)
 		}
@@ -201,7 +202,7 @@ func TestCipherModes_EngineVectors(t *testing.T) {
 				"a81c79a04f29660ea3fda874c630799e"+
 				"142c577914fea90d3bc2502e833685d9")
 
-		ctr, err := NewCTRACPKM(func(k []byte) cipher.Block { return gost3412128.NewCipher(k) }, keyKuz, ivACPKMMaster, 96)
+		ctr, err := gost.NewCTRACPKM(func(k []byte) cipher.Block { return gost3412128.NewCipher(k) }, keyKuz, ivACPKMMaster, 96)
 		if err != nil {
 			t.Fatalf("NewCTRACPKM: %v", err)
 		}

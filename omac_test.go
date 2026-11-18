@@ -1,10 +1,11 @@
-package gostcryptocompat
+package gostcryptocompat_test
 
 import (
 	"bytes"
 	"encoding/hex"
 	"testing"
 
+	gost "github.com/tarantool/go-gostcrypto-compat"
 	"go.stargrave.org/gogost/v7/gost3412128"
 	"go.stargrave.org/gogost/v7/gost341264"
 )
@@ -47,7 +48,7 @@ func TestOMAC_Kuznyechik_KAT(t *testing.T) {
 
 	block := gost3412128.NewCipher(key)
 
-	mac, err := NewOMAC(block, 8)
+	mac, err := gost.NewOMAC(block, 8)
 	if err != nil {
 		t.Fatalf("NewOMAC: %v", err)
 	}
@@ -98,7 +99,7 @@ func TestOMAC_Magma_KAT(t *testing.T) {
 
 	block := gost341264.NewCipher(key)
 
-	mac, err := NewOMAC(block, 4)
+	mac, err := gost.NewOMAC(block, 4)
 	if err != nil {
 		t.Fatalf("NewOMAC: %v", err)
 	}
@@ -131,7 +132,7 @@ func TestOMAC_SumIdempotent(t *testing.T) {
 
 	block := gost3412128.NewCipher(key)
 
-	mac, err := NewOMAC(block, 8)
+	mac, err := gost.NewOMAC(block, 8)
 	if err != nil {
 		t.Fatalf("NewOMAC: %v", err)
 	}
@@ -173,7 +174,7 @@ func TestOMAC_SumAfterWrite(t *testing.T) {
 	// Incremental: write half1, sum, write half2, sum again.
 	block1 := gost3412128.NewCipher(key)
 
-	macIncr, err := NewOMAC(block1, 8)
+	macIncr, err := gost.NewOMAC(block1, 8)
 	if err != nil {
 		t.Fatalf("NewOMAC: %v", err)
 	}
@@ -192,7 +193,7 @@ func TestOMAC_SumAfterWrite(t *testing.T) {
 	// Reference: fresh OMAC over the full input.
 	block2 := gost3412128.NewCipher(key)
 
-	macFull, err := NewOMAC(block2, 8)
+	macFull, err := gost.NewOMAC(block2, 8)
 	if err != nil {
 		t.Fatalf("NewOMAC ref: %v", err)
 	}
