@@ -55,6 +55,35 @@ linters:
           - err113
           - funlen
 
+      # The following have no counterpart in go-gostcrypto, whose layout does
+      # not have these cases.
+
+      # parity/<primitive>/ packages hold only _test.go files: there is no
+      # package under test for an external _test package to stay outside of.
+      - path: ^parity/
+        linters:
+          - testpackage
+      # OFB and CFB are GOST R 34.13-2015 modes and the tests pin gost-engine
+      # KATs for them, so the stdlib deprecation of these unauthenticated modes
+      # does not apply to the tests.
+      - path: _test\.go
+        linters:
+          - staticcheck
+        text: 'SA1019: cipher\.New(OFB|CFBEncrypter|CFBDecrypter) has been deprecated'
+      # Hex dumps of test vectors in comments repeat bytes by nature
+      # ("ff ff ff ..."), and dupword's fix would collapse them.
+      - linters:
+          - dupword
+        source: '^\s*//(\s+[0-9a-fA-F]{2})+\s*$'
+      # gogost and aead/cmac cannot resolve through the module proxy and are
+      # vendored under third_party/, wired in by a local replace (see go.mod).
+      # Any other local replace, such as one to ../go-gostcrypto, is still
+      # reported.
+      - path: go\.mod
+        linters:
+          - gomoddirectives
+        text: 'local replacement are not allowed: (go\.stargrave\.org/gogost/v7|github\.com/aead/cmac)$'
+
   settings:
     godot:
       scope: all
@@ -73,6 +102,13 @@ linters:
         # deliberate home for the gogost reference. The allow-list therefore
         # includes gogost, the vendored aead/cmac oracle, and both sibling
         # modules; everything else stays out of the module graph.
+        #
+        # go-gostcrypto is listed as an exact "go-gostcrypto$" plus a
+        # "go-gostcrypto/" prefix, not as a bare prefix: depguard checks an
+        # import only against the nearest allow entry in sort order, and a
+        # bare "github.com/tarantool/go-gostcrypto" loses to the
+        # "...-compat" entry that sorts after it, so every
+        # go-gostcrypto/<pkg> import would be reported.
         main:
           files:
             - "$all"
@@ -80,7 +116,8 @@ linters:
           allow:
             - $gostd
             - "github.com/tarantool/go-gostcrypto-compat"
-            - "github.com/tarantool/go-gostcrypto"
+            - "github.com/tarantool/go-gostcrypto$"
+            - "github.com/tarantool/go-gostcrypto/"
             - "go.stargrave.org/gogost/v7"
         test:
           files:
@@ -88,6 +125,7 @@ linters:
           allow:
             - $gostd
             - "github.com/tarantool/go-gostcrypto-compat"
-            - "github.com/tarantool/go-gostcrypto"
+            - "github.com/tarantool/go-gostcrypto$"
+            - "github.com/tarantool/go-gostcrypto/"
             - "go.stargrave.org/gogost/v7"
             - "github.com/aead/cmac"
