@@ -12,10 +12,29 @@ package gostcryptocompat
 
 import (
 	"crypto/cipher"
+	"errors"
 	"fmt"
 
 	"go.stargrave.org/gogost/v7/gost3412128"
 	"go.stargrave.org/gogost/v7/gost341264"
+)
+
+// Fixed sizes (bytes) for kexp15. The iv is half a cipher block and the MAC
+// is a full block (gost_keyexpimp.c).
+const (
+	kexpKuznyechikIVLen = gost3412128.BlockSize / 2
+	kexpMagmaIVLen      = gost341264.BlockSize / 2
+	// kexpKeySize is the required length of cipherKey and macKey.
+	kexpKeySize = 32
+)
+
+// Sentinel errors for the kexp15 input validation.
+var (
+	errKexpUnknown        = errors.New("gost.Kexp15: unknown variant")
+	errKexpEmptySharedKey = errors.New("gost.Kexp15: sharedKey must not be empty")
+	errKexpCipherKeyLen   = errors.New("gost.Kexp15: cipherKey must be 32 bytes")
+	errKexpMACKeyLen      = errors.New("gost.Kexp15: macKey must be 32 bytes")
+	errKexpIVLen          = errors.New("gost.Kexp15: iv length")
 )
 
 // KexpVariant selects the underlying block cipher for kexp15.
@@ -41,11 +60,19 @@ type kexpParams struct {
 func (v KexpVariant) params() (kexpParams, error) {
 	switch v {
 	case KexpKuznyechik:
-		return kexpParams{blockSize: 16, ivLen: 8, macLen: 16}, nil
+		return kexpParams{
+			blockSize: gost3412128.BlockSize,
+			ivLen:     kexpKuznyechikIVLen,
+			macLen:    gost3412128.BlockSize,
+		}, nil
 	case KexpMagma:
-		return kexpParams{blockSize: 8, ivLen: 4, macLen: 8}, nil
+		return kexpParams{
+			blockSize: gost341264.BlockSize,
+			ivLen:     kexpMagmaIVLen,
+			macLen:    gost341264.BlockSize,
+		}, nil
 	default:
-		return kexpParams{}, fmt.Errorf("gost.Kexp15: unknown variant %d", v)
+		return kexpParams{}, fmt.Errorf("%w %d", errKexpUnknown, v)
 	}
 }
 
@@ -67,19 +94,19 @@ func Kexp15(variant KexpVariant, sharedKey, cipherKey, macKey, iv []byte) ([]byt
 	}
 
 	if len(sharedKey) == 0 {
-		return nil, fmt.Errorf("gost.Kexp15: sharedKey must not be empty")
+		return nil, errKexpEmptySharedKey
 	}
 
-	if len(cipherKey) != 32 {
-		return nil, fmt.Errorf("gost.Kexp15: cipherKey must be 32 bytes, got %d", len(cipherKey))
+	if len(cipherKey) != kexpKeySize {
+		return nil, fmt.Errorf("%w, got %d", errKexpCipherKeyLen, len(cipherKey))
 	}
 
-	if len(macKey) != 32 {
-		return nil, fmt.Errorf("gost.Kexp15: macKey must be 32 bytes, got %d", len(macKey))
+	if len(macKey) != kexpKeySize {
+		return nil, fmt.Errorf("%w, got %d", errKexpMACKeyLen, len(macKey))
 	}
 
 	if len(iv) != p.ivLen {
-		return nil, fmt.Errorf("gost.Kexp15: iv must be %d bytes, got %d", p.ivLen, len(iv))
+		return nil, fmt.Errorf("%w: must be %d bytes, got %d", errKexpIVLen, p.ivLen, len(iv))
 	}
 
 	// Step 1: iv_full — pad iv with zeros to full block size.

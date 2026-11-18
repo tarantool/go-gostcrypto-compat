@@ -13,6 +13,9 @@ import (
 	"go.stargrave.org/gogost/v7/gost34112012256"
 )
 
+// tlsTreeMasterKeySize is the TLSTree master-key length in bytes.
+const tlsTreeMasterKeySize = 32
+
 // TLSTree wraps a gogost TLSTree and ensures Derive returns a fresh slice that
 // does not alias gogost's internal key buffer.
 type TLSTree struct {
@@ -24,7 +27,7 @@ type TLSTree struct {
 // masterKey must be exactly 32 bytes; any other length is a programmer error
 // and panics.
 func NewTLSTreeKuznyechikCTROMAC(masterKey []byte) *TLSTree {
-	if len(masterKey) != 32 {
+	if len(masterKey) != tlsTreeMasterKeySize {
 		panic("gost/tlstree: masterKey must be 32 bytes for KuznyechikCTROMAC")
 	}
 
@@ -41,7 +44,7 @@ func NewTLSTreeKuznyechikCTROMAC(masterKey []byte) *TLSTree {
 // masterKey must be exactly 32 bytes; any other length is a programmer error
 // and panics.
 func NewTLSTreeMagmaCTROMAC(masterKey []byte) *TLSTree {
-	if len(masterKey) != 32 {
+	if len(masterKey) != tlsTreeMasterKeySize {
 		panic("gost/tlstree: masterKey must be 32 bytes for MagmaCTROMAC")
 	}
 
@@ -61,7 +64,7 @@ func (t *TLSTree) Derive(seqNum uint64) []byte {
 	// gogost's DeriveCached returns a slice pointing into internal state;
 	// calling it again on the same tree overwrites the buffer. Copy here.
 	key, _ := t.inner.DeriveCached(seqNum)
-	out := make([]byte, 32)
+	out := make([]byte, gost34112012256.Size)
 	copy(out, key)
 
 	return out

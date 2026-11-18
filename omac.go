@@ -10,8 +10,23 @@ package gostcryptocompat
 import (
 	"crypto/cipher"
 	"crypto/subtle"
+	"errors"
 	"fmt"
 )
+
+// Block sizes and their GF(2^n) reduction-polynomial low bytes Rb.
+const (
+	omacBlockSize128 = 16   // Kuznyechik, 128-bit block.
+	omacBlockSize64  = 8    // Magma, 64-bit block.
+	omacRb128        = 0x87 // x^128 + x^7 + x^2 + x + 1 (RFC 4493 §2.3).
+	omacRb64         = 0x1b // x^64 + x^4 + x^3 + x + 1 (RFC 8645 §4.1.1).
+
+	// msbShift is the bit position of the most-significant bit in a byte.
+	msbShift = 7
+)
+
+// errOMACTagSize reports a tag size outside [1, block size].
+var errOMACTagSize = errors.New("gost: NewOMAC: tagSize out of range")
 
 // OMAC holds the state for an OMAC1/CMAC computation. It implements
 // hash.Hash (Write / Sum / Reset / BlockSize / Size).
@@ -35,7 +50,7 @@ type OMAC struct {
 func NewOMAC(block cipher.Block, tagSize int) (*OMAC, error) {
 	bs := block.BlockSize()
 	if tagSize < 1 || tagSize > bs {
-		return nil, fmt.Errorf("gost: NewOMAC: tagSize %d out of range [1, %d]", tagSize, bs)
+		return nil, fmt.Errorf("%w: tagSize %d, want [1, %d]", errOMACTagSize, tagSize, bs)
 	}
 
 	k1, k2 := cmacSubkeys(block)
@@ -65,10 +80,10 @@ func cmacSubkeys(block cipher.Block) (k1, k2 []byte) {
 	var rb byte
 
 	switch bs {
-	case 16:
-		rb = 0x87
-	case 8:
-		rb = 0x1b
+	case omacBlockSize128:
+		rb = omacRb128
+	case omacBlockSize64:
+		rb = omacRb64
 	default:
 		panic(fmt.Sprintf("gost: OMAC: unsupported block size %d (want 8 or 16)", bs))
 	}
@@ -84,9 +99,9 @@ func cmacSubkeys(block cipher.Block) (k1, k2 []byte) {
 func shiftLeftXorRb(in []byte, rb byte) []byte {
 	out := make([]byte, len(in))
 
-	msb := in[0] >> 7 // 1 if MSB set, 0 otherwise.
+	msb := in[0] >> msbShift // 1 if MSB set, 0 otherwise.
 	for i := 0; i < len(in)-1; i++ {
-		out[i] = (in[i] << 1) | (in[i+1] >> 7)
+		out[i] = (in[i] << 1) | (in[i+1] >> msbShift)
 	}
 
 	out[len(in)-1] = in[len(in)-1] << 1

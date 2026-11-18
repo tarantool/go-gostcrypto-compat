@@ -8,6 +8,7 @@ package gostcryptocompat
 import (
 	"crypto/rand"
 	"encoding/asn1"
+	"encoding/binary"
 	"errors"
 	"fmt"
 
@@ -15,9 +16,24 @@ import (
 	"go.stargrave.org/gogost/v7/gost3410"
 	"go.stargrave.org/gogost/v7/gost34112012256"
 	"go.stargrave.org/gogost/v7/gost34112012512"
-	"go.stargrave.org/gogost/v7/gost341194"
 	"go.stargrave.org/gogost/v7/gost3412128"
 	"go.stargrave.org/gogost/v7/gost341264"
+)
+
+// Fixed sizes for the CryptoPro key wrap (RFC 4357) and the IMIT MAC.
+const (
+	// kekSize is the KEK length in bytes.
+	kekSize = 32
+	// ukmSize is the UKM length in bytes.
+	ukmSize = 8
+	// sessionKeySize is the session-key length in bytes.
+	sessionKeySize = 32
+	// imitTagSize is the truncated GOST 28147-89 IMIT length in bytes, used
+	// by the key wrap, by GOST28147_IMIT (RFC 9189 §4.2) and by the
+	// placeholder IMIT hash.
+	imitTagSize = 4
+	// keyWrapSize is the wrapped-key length: ukm | encrypted key | IMIT.
+	keyWrapSize = ukmSize + sessionKeySize + imitTagSize
 )
 
 // Sentinel errors for the one-shot block helper input validation.
@@ -25,6 +41,23 @@ var (
 	errKuznyechikInputLen = errors.New("gost: KuznyechikEncrypt/Decrypt: input must be exactly 16 bytes")
 	errMagmaInputLen      = errors.New("gost: MagmaEncrypt/Decrypt: input must be exactly 8 bytes")
 	errGOST28147InputLen  = errors.New("gost: GOST2814789Encrypt/Decrypt: input must be exactly 8 bytes")
+)
+
+// errUnsupportedCurveOID is returned by CurveByOID for an unknown curve.
+var errUnsupportedCurveOID = errors.New("gost: unsupported curve OID")
+
+// Sentinel errors for the CryptoPro key-wrap input validation.
+var (
+	errKeyWrapKEKSize        = errors.New("gost: KeyWrapCryptoPro KEK must be 32 bytes")
+	errKeyWrapUKMSize        = errors.New("gost: KeyWrapCryptoPro UKM must be 8 bytes")
+	errKeyWrapSessionKeySize = errors.New("gost: KeyWrapCryptoPro session key must be 32 bytes")
+)
+
+// Sentinel errors for the GOST 28147-89 CNT / IMIT input validation.
+var (
+	errCNTKeyLen  = errors.New("gost: GOST28147_CNT key length")
+	errCNTIVLen   = errors.New("gost: GOST28147_CNT iv length")
+	errIMITKeyLen = errors.New("gost: GOST28147_IMIT key length")
 )
 
 // Curve is an opaque handle for a GOST R 34.10 curve. It wraps the gogost
@@ -75,7 +108,7 @@ func CurveByOID(oid asn1.ObjectIdentifier) (*Curve, error) {
 		return &Curve{inner: gost3410.CurveIdtc26gost34102012512paramSetC()}, nil
 	}
 
-	return nil, fmt.Errorf("gost: unsupported curve OID %v", oid)
+	return nil, fmt.Errorf("%w %v", errUnsupportedCurveOID, oid)
 }
 
 // ── Kuznyechik (GOST R 34.12-2015, 128-bit) ──────────────────────────────────.
@@ -192,7 +225,7 @@ func Streebog512(msg []byte) []byte {
 
 // GOSTR341194 computes the GOST R 34.11-94 hash using the CryptoPro parameter set.
 func GOSTR341194(msg []byte) []byte {
-	h := gost341194.New(&gost28147.SboxIdGostR341194CryptoProParamSet)
+	h := NewGOSTR341194CryptoProHash()
 	h.Write(msg)
 
 	return h.Sum(nil)
@@ -322,16 +355,16 @@ func VKO2001TestCurve(prvRaw, pubRaw, ukmRaw []byte) ([]byte, error) {
 // split the output as wrapped[8:40] (encrypted_key) and wrapped[40:44]
 // (imit) when building a GOST_KEY_TRANSPORT structure.
 func KeyWrapCryptoPro(sbox *Sbox, kek, ukm, sessionKey []byte) ([]byte, error) {
-	if len(kek) != 32 {
-		return nil, fmt.Errorf("gost: KeyWrapCryptoPro KEK must be 32 bytes, got %d", len(kek))
+	if len(kek) != kekSize {
+		return nil, fmt.Errorf("%w, got %d", errKeyWrapKEKSize, len(kek))
 	}
 
-	if len(ukm) != 8 {
-		return nil, fmt.Errorf("gost: KeyWrapCryptoPro UKM must be 8 bytes, got %d", len(ukm))
+	if len(ukm) != ukmSize {
+		return nil, fmt.Errorf("%w, got %d", errKeyWrapUKMSize, len(ukm))
 	}
 
-	if len(sessionKey) != 32 {
-		return nil, fmt.Errorf("gost: KeyWrapCryptoPro session key must be 32 bytes, got %d", len(sessionKey))
+	if len(sessionKey) != sessionKeySize {
+		return nil, fmt.Errorf("%w, got %d", errKeyWrapSessionKeySize, len(sessionKey))
 	}
 
 	kekUKM := keyDiversifyCryptoPro(sbox, kek, ukm)
@@ -339,13 +372,15 @@ func KeyWrapCryptoPro(sbox *Sbox, kek, ukm, sessionKey []byte) ([]byte, error) {
 	// Encrypt sessionKey in ECB mode under the diversified key.
 	c := gost28147.NewCipher(kekUKM, sbox.inner)
 
-	encrypted := make([]byte, 32)
-	for i := 0; i < 32; i += 8 {
-		c.Encrypt(encrypted[i:i+8], sessionKey[i:i+8])
+	const bs = gost28147.BlockSize
+
+	encrypted := make([]byte, sessionKeySize)
+	for i := 0; i < sessionKeySize; i += bs {
+		c.Encrypt(encrypted[i:i+bs], sessionKey[i:i+bs])
 	}
 
 	// MAC over sessionKey with iv=ukm, size=4 bytes, using the diversified key.
-	mac, err := c.NewMAC(4, ukm)
+	mac, err := c.NewMAC(imitTagSize, ukm)
 	if err != nil {
 		return nil, fmt.Errorf("gost: KeyWrapCryptoPro NewMAC: %w", err)
 	}
@@ -354,28 +389,28 @@ func KeyWrapCryptoPro(sbox *Sbox, kek, ukm, sessionKey []byte) ([]byte, error) {
 		return nil, fmt.Errorf("gost: KeyWrapCryptoPro MAC write: %w", err)
 	}
 
-	macOut := mac.Sum(nil)
+	out := make([]byte, 0, keyWrapSize)
 
-	out := make([]byte, 44)
-	copy(out[0:8], ukm)
-	copy(out[8:40], encrypted)
-	copy(out[40:44], macOut)
+	out = append(out, ukm...)
+	out = append(out, encrypted...)
 
-	return out, nil
+	return mac.Sum(out), nil
 }
 
 // keyDiversifyCryptoPro implements RFC 4357 §6.5 — eight rounds of 28147
 // CFB encryption to diversify the KEK by the UKM. Mirrors gost-engine's
 // keyDiversifyCryptoPro in gost_keywrap.c.
 func keyDiversifyCryptoPro(sbox *Sbox, inputKey, ukm []byte) []byte {
-	out := make([]byte, 32)
+	out := make([]byte, kekSize)
 	copy(out, inputKey)
 
 	for i := range 8 {
 		var s1, s2 uint32
 
+		// Split the key into eight little-endian 32-bit words; bit j of
+		// ukm[i] selects the sum word j is added to.
 		for j := range 8 {
-			k := uint32(out[4*j]) | uint32(out[4*j+1])<<8 | uint32(out[4*j+2])<<16 | uint32(out[4*j+3])<<24
+			k := binary.LittleEndian.Uint32(out[4*j:])
 			if ukm[i]&(1<<j) != 0 {
 				s1 += k
 			} else {
@@ -383,16 +418,11 @@ func keyDiversifyCryptoPro(sbox *Sbox, inputKey, ukm []byte) []byte {
 			}
 		}
 
-		var S [8]byte
+		// The CFB IV is s1 | s2, both little-endian.
+		var S [gost28147.BlockSize]byte
 
-		S[0] = byte(s1)
-		S[1] = byte(s1 >> 8)
-		S[2] = byte(s1 >> 16)
-		S[3] = byte(s1 >> 24)
-		S[4] = byte(s2)
-		S[5] = byte(s2 >> 8)
-		S[6] = byte(s2 >> 16)
-		S[7] = byte(s2 >> 24)
+		binary.LittleEndian.PutUint32(S[:4], s1)
+		binary.LittleEndian.PutUint32(S[4:], s2)
 
 		c := gost28147.NewCipher(out, sbox.inner)
 		cfb := c.NewCFBEncrypter(S[:])
@@ -444,11 +474,11 @@ func VKO2012_256OnCurve(curve *Curve, prvRaw, pubRaw, ukmRaw []byte) ([]byte, er
 // Tarantool-EE 3.5.0 via TestTarantoolEE_Ping_GOST_Pure (0x0081, 0xFF85).
 func NewGOST28147_CNT(key, iv []byte) (*gost28147.CTR, error) {
 	if len(key) != gost28147.KeySize {
-		return nil, fmt.Errorf("gost: GOST28147_CNT key must be %d bytes, got %d", gost28147.KeySize, len(key))
+		return nil, fmt.Errorf("%w: must be %d bytes, got %d", errCNTKeyLen, gost28147.KeySize, len(key))
 	}
 
 	if len(iv) != gost28147.BlockSize {
-		return nil, fmt.Errorf("gost: GOST28147_CNT iv must be %d bytes, got %d", gost28147.BlockSize, len(iv))
+		return nil, fmt.Errorf("%w: must be %d bytes, got %d", errCNTIVLen, gost28147.BlockSize, len(iv))
 	}
 
 	c := gost28147.NewCipher(key, gost28147.SboxDefault)
@@ -488,7 +518,7 @@ var cryptoProKeyMeshingKey = [32]byte{
 // TestTarantoolEE_Ping_GOST_Pure.
 func GOST28147_IMIT(key, msg []byte) ([]byte, error) {
 	if len(key) != gost28147.KeySize {
-		return nil, fmt.Errorf("gost: GOST28147_IMIT key must be %d bytes, got %d", gost28147.KeySize, len(key))
+		return nil, fmt.Errorf("%w: must be %d bytes, got %d", errIMITKeyLen, gost28147.KeySize, len(key))
 	}
 
 	const meshThreshold = 1024
@@ -541,46 +571,49 @@ func GOST28147_IMIT(key, msg []byte) ([]byte, error) {
 		return nil
 	}
 
-	nBlocks := len(msg) / gost28147.BlockSize
-	remaining := len(msg) % gost28147.BlockSize
-
-	if len(msg) > 0 && len(msg) <= gost28147.BlockSize {
-		// Short-message finalization (gost-engine parity). For inputs of
-		// 1..8 bytes no full block precedes the final chunk (count == 0), so
-		// gost_imit_final MACs the zero-padded data block FIRST and then a
-		// TRAILING all-zero block — including the exactly-8-byte case
-		// (gost_crypt.c:1566-1577; one-shot gost_mac gost89.c:716-719).
-		// Inputs > 8 bytes never reach here.
-		last := make([]byte, gost28147.BlockSize)
-		copy(last, msg)
-
-		if err := processBlock(last); err != nil {
+	for _, blk := range imitBlocks(msg) {
+		if err := processBlock(blk); err != nil {
 			return nil, err
-		}
-
-		if err := processBlock(make([]byte, gost28147.BlockSize)); err != nil {
-			return nil, err
-		}
-	} else {
-		for i := range nBlocks {
-			if err := processBlock(msg[i*gost28147.BlockSize : (i+1)*gost28147.BlockSize]); err != nil {
-				return nil, err
-			}
-		}
-
-		if remaining > 0 {
-			last := make([]byte, gost28147.BlockSize)
-			copy(last, msg[nBlocks*gost28147.BlockSize:])
-
-			if err := processBlock(last); err != nil {
-				return nil, err
-			}
 		}
 	}
 
 	full := mac.Sum(nil)
 
-	return full[:4], nil
+	return full[:imitTagSize], nil
+}
+
+// imitBlocks splits msg into the 8-byte blocks GOST28147_IMIT feeds to the
+// MAC, zero-padding a final partial block.
+//
+// Short-message finalization (gost-engine parity). For inputs of 1..8 bytes
+// no full block precedes the final chunk, so gost_imit_final MACs the
+// zero-padded data block FIRST and then a TRAILING all-zero block —
+// including the exactly-8-byte case (gost_crypt.c:1566-1577; one-shot
+// gost_mac gost89.c:716-719). Longer inputs get no trailing block.
+func imitBlocks(msg []byte) [][]byte {
+	const bs = gost28147.BlockSize
+
+	if len(msg) > 0 && len(msg) <= bs {
+		last := make([]byte, bs)
+		copy(last, msg)
+
+		return [][]byte{last, make([]byte, bs)}
+	}
+
+	blocks := make([][]byte, 0, (len(msg)+bs-1)/bs)
+	for len(msg) >= bs {
+		blocks = append(blocks, msg[:bs])
+		msg = msg[bs:]
+	}
+
+	if len(msg) > 0 {
+		last := make([]byte, bs)
+		copy(last, msg)
+
+		blocks = append(blocks, last)
+	}
+
+	return blocks
 }
 
 // VKO2012_512 computes VKO GOST R 34.10-2012 with 512-bit KEK output (RFC 7836).
