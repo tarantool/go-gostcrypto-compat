@@ -129,14 +129,18 @@ func TestDiffSumNonDestructive(t *testing.T) {
 		{
 			name:    "kuznyechik",
 			newMine: func(k []byte, ts int) *mynew.OMAC { return mynew.New(kuznyechik.NewCipher(k), ts) },
-			newRef:  func(k []byte, ts int) (*gost.OMAC, error) { return gost.NewOMAC(gost.NewKuznyechikCipher(k), ts) },
-			bs:      16,
+			newRef: func(k []byte, ts int) (*gost.OMAC, error) {
+				return gost.NewOMAC(gost.NewKuznyechikCipher(k), ts)
+			},
+			bs: 16,
 		},
 		{
 			name:    "magma",
 			newMine: func(k []byte, ts int) *mynew.OMAC { return mynew.New(magma.NewCipher(k), ts) },
-			newRef:  func(k []byte, ts int) (*gost.OMAC, error) { return gost.NewOMAC(gost.NewMagmaCipher(k), ts) },
-			bs:      8,
+			newRef: func(k []byte, ts int) (*gost.OMAC, error) {
+				return gost.NewOMAC(gost.NewMagmaCipher(k), ts)
+			},
+			bs: 8,
 		},
 	}
 

@@ -136,7 +136,10 @@ func TestKexp15_ErrorCasesParity(t *testing.T) {
 		{"short cipher key", gost.KexpMagma, KexpMagma, good.shared, good.cipherKey[:31], good.macKey, good.iv},
 		{"short mac key", gost.KexpMagma, KexpMagma, good.shared, good.cipherKey, good.macKey[:31], good.iv},
 		{"wrong iv len (magma)", gost.KexpMagma, KexpMagma, good.shared, good.cipherKey, good.macKey, good.iv[:3]},
-		{"kuznyechik iv too short", gost.KexpKuznyechik, KexpKuznyechik, good.shared, good.cipherKey, good.macKey, good.iv},
+		{
+			"kuznyechik iv too short", gost.KexpKuznyechik, KexpKuznyechik,
+			good.shared, good.cipherKey, good.macKey, good.iv,
+		},
 		{"bad variant", gost.KexpVariant(99), KexpVariant(99), good.shared, good.cipherKey, good.macKey, good.iv},
 	}
 	for _, tc := range cases {

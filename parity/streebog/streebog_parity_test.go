@@ -3,6 +3,7 @@ package streebogparity
 import (
 	"bytes"
 	"math/rand"
+	"slices"
 	"testing"
 
 	gost "github.com/tarantool/go-gostcrypto-compat"
@@ -18,8 +19,11 @@ func TestDiffAgainstGost(t *testing.T) {
 	rng := rand.New(rand.NewSource(0xC0FFEE))
 
 	// Include boundary lengths explicitly plus randomized ones.
-	lengths := []int{0, 1, 7, 31, 63, 64, 65, 127, 128, 129, 191, 192, 255, 256, 1000, 4096}
-	for range 200 {
+	const randomLengths = 200
+
+	lengths := slices.Grow([]int{0, 1, 7, 31, 63, 64, 65, 127, 128, 129, 191, 192, 255, 256, 1000, 4096},
+		randomLengths)
+	for range randomLengths {
 		lengths = append(lengths, rng.Intn(2050))
 	}
 

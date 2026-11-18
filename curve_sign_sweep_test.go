@@ -134,7 +134,8 @@ func TestCurveByOID_SupportedCurvesSanity(t *testing.T) {
 
 			want := tc.curve()
 			if !got.inner.Equal(want) {
-				t.Fatalf("CurveByOID(%v) returned unexpected curve:\n got  %s\n want %s", tc.oid, got.inner.Name, want.Name)
+				t.Fatalf("CurveByOID(%v) returned unexpected curve:\n got  %s\n want %s",
+					tc.oid, got.inner.Name, want.Name)
 			}
 
 			if got.inner.Name == "" {

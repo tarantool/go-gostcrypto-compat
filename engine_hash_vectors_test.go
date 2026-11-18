@@ -51,10 +51,12 @@ func TestGost_Streebog256_EngineVectors(t *testing.T) {
 			srcLine:  107,
 		},
 		{
-			// print $F pack("H*","d1e520e2e5f2f0e82c20d1f2f0e8e1eee6e820e2edf3f6e82c20e2e5fef2fa20f120eceef0ff20f1f2f0e5ebe0ece820ede020f5f0e0e1f0fbff20efebfaeafb20c8e3eef0e5e2fb")
+			// print $F pack("H*","d1e520e2...")
 			// Perl test/01-digest.t:124-130 and tcl_tests/dgst.try:51-53.
-			name:    "example-2-from-standard-72bytes",
-			inputHx: "d1e520e2e5f2f0e82c20d1f2f0e8e1eee6e820e2edf3f6e82c20e2e5fef2fa20f120eceef0ff20f1f2f0e5ebe0ece820ede020f5f0e0e1f0fbff20efebfaeafb20c8e3eef0e5e2fb",
+			name: "example-2-from-standard-72bytes",
+			inputHx: "d1e520e2e5f2f0e82c20d1f2f0e8e1eee6e820e2edf3f6e82c20e2e5fef2fa20" +
+				"f120eceef0ff20f1f2f0e5ebe0ece820ede020f5f0e0e1f0fbff20efebfaeafb" +
+				"20c8e3eef0e5e2fb",
 			expect:  "9dd2fe4e90409e5da87f53976d7405b0c0cac628fc669a741d50063c557e8f50",
 			srcFile: "test/01-digest.t",
 			srcLine: 129,
@@ -109,8 +111,11 @@ func TestGost_Streebog256_EngineVectors(t *testing.T) {
 			// (128 bytes total, special carry-propagation test vector).
 			// Verified against etalon/carry (wc -c=128) and etalon/dgst.result line 16.
 			// tcl_tests/dgst.try:43-45 and etalon/dgst.result.
-			name:    "special-CF-128bytes",
-			inputHx: "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee16111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111116",
+			name: "special-CF-128bytes",
+			inputHx: "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" +
+				"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" +
+				"1611111111111111111111111111111111111111111111111111111111111111" +
+				"1111111111111111111111111111111111111111111111111111111111111116",
 			expect:  "81bb632fa31fcc38b4c379a662dbc58b9bed83f50d3a1b2ce7271ab02d25babb",
 			srcFile: "tcl_tests/dgst.try",
 			srcLine: 44,
@@ -170,16 +175,20 @@ func TestGost_Streebog512_EngineVectors(t *testing.T) {
 			// test/01-digest.t:112-118 and tcl_tests/dgst.try:55-57.
 			name:     "example-1-from-standard-63bytes",
 			inputStr: "012345678901234567890123456789012345678901234567890123456789012",
-			expect:   "1b54d01a4af5b9d5cc3d86d68d285462b19abc2475222f35c085122be4ba1ffa00ad30f8767b3a82384c6574f024c311e2a481332b08ef7f41797891c1646f48",
-			srcFile:  "test/01-digest.t",
-			srcLine:  115,
+			expect: "1b54d01a4af5b9d5cc3d86d68d285462b19abc2475222f35c085122be4ba1ffa" +
+				"00ad30f8767b3a82384c6574f024c311e2a481332b08ef7f41797891c1646f48",
+			srcFile: "test/01-digest.t",
+			srcLine: 115,
 		},
 		{
 			// testm2.dat = pack("H*","d1e520e2...")
 			// test/01-digest.t:133-140 and tcl_tests/dgst.try:75-77.
-			name:    "example-2-from-standard-72bytes",
-			inputHx: "d1e520e2e5f2f0e82c20d1f2f0e8e1eee6e820e2edf3f6e82c20e2e5fef2fa20f120eceef0ff20f1f2f0e5ebe0ece820ede020f5f0e0e1f0fbff20efebfaeafb20c8e3eef0e5e2fb",
-			expect:  "1e88e62226bfca6f9994f1f2d51569e0daf8475a3b0fe61a5300eee46d961376035fe83549ada2b8620fcd7c496ce5b33f0cb9dddc2b6460143b03dabac9fb28",
+			name: "example-2-from-standard-72bytes",
+			inputHx: "d1e520e2e5f2f0e82c20d1f2f0e8e1eee6e820e2edf3f6e82c20e2e5fef2fa20" +
+				"f120eceef0ff20f1f2f0e5ebe0ece820ede020f5f0e0e1f0fbff20efebfaeafb" +
+				"20c8e3eef0e5e2fb",
+			expect: "1e88e62226bfca6f9994f1f2d51569e0daf8475a3b0fe61a5300eee46d961376" +
+				"035fe83549ada2b8620fcd7c496ce5b33f0cb9dddc2b6460143b03dabac9fb28",
 			srcFile: "test/01-digest.t",
 			srcLine: 137,
 		},
@@ -188,16 +197,18 @@ func TestGost_Streebog512_EngineVectors(t *testing.T) {
 			// test/01-digest.t:165-171.
 			name:     "1K-ascii-repeated",
 			inputStr: strings.Repeat("12345670", 128),
-			expect:   "283587e434864d0d4bea97c0fb10e2dd421572fc859304bdf6a94673d652c59049212bad7802b4fcf5eecc1f8fab569d60f2c20dbd789a7fe4efbd79d8137ee7",
-			srcFile:  "test/01-digest.t",
-			srcLine:  169,
+			expect: "283587e434864d0d4bea97c0fb10e2dd421572fc859304bdf6a94673d652c590" +
+				"49212bad7802b4fcf5eecc1f8fab569d60f2c20dbd789a7fe4efbd79d8137ee7",
+			srcFile: "test/01-digest.t",
+			srcLine: 169,
 		},
 		{
 			// testdata2.dat = "\x00\x01\x02\x15\x84\x67\x45\x31" x 128 (1024 bytes binary)
 			// test/01-digest.t:196-203.
 			name:    "1K-binary-repeated",
 			inputHx: strings.Repeat("0001021584674531", 128),
-			expect:  "55656e5bcf795b499031a7833cd7dc18fe10d4a47e15be545c6ab3f304a4fe411c4c39de5b1fc6844880111441e0b92bf1ec2fb7840453fe39a2b70ced461968",
+			expect: "55656e5bcf795b499031a7833cd7dc18fe10d4a47e15be545c6ab3f304a4fe41" +
+				"1c4c39de5b1fc6844880111441e0b92bf1ec2fb7840453fe39a2b70ced461968",
 			srcFile: "test/01-digest.t",
 			srcLine: 200,
 		},
@@ -206,36 +217,43 @@ func TestGost_Streebog512_EngineVectors(t *testing.T) {
 			// test/01-digest.t:228-234.
 			name:     "539-bytes-ascii",
 			inputStr: strings.Repeat("12345670", 128)[:539],
-			expect:   "d5ad93fbc9ed7abc1cf28d00827a052b40bea74b04c4fd753102c1bcf9f9dad5142887f8a4cceaa0d64a0a8291592413d6adb956b99138a0023e127ff37bdf08",
-			srcFile:  "test/01-digest.t",
-			srcLine:  231,
+			expect: "d5ad93fbc9ed7abc1cf28d00827a052b40bea74b04c4fd753102c1bcf9f9dad5" +
+				"142887f8a4cceaa0d64a0a8291592413d6adb956b99138a0023e127ff37bdf08",
+			srcFile: "test/01-digest.t",
+			srcLine: 231,
 		},
 		{
 			// bigdata.dat
 			// test/01-digest.t:258-265.
 			name:     "128K-bigdata",
 			inputStr: strings.Repeat(strings.Repeat("121345678", 7)+"1234567\n", 4096) + "12345\n",
-			expect:   "1d93645ebfbb477660f98b7d1598e37fbf3bfc8234ead26e2246e1b979e590ac46138158a692f9a0c9ac2550758b4d0d4c9fb8af5e595a16d3760c6516443f82",
-			srcFile:  "test/01-digest.t",
-			srcLine:  261,
+			expect: "1d93645ebfbb477660f98b7d1598e37fbf3bfc8234ead26e2246e1b979e590ac" +
+				"46138158a692f9a0c9ac2550758b4d0d4c9fb8af5e595a16d3760c6516443f82",
+			srcFile: "test/01-digest.t",
+			srcLine: 261,
 		},
 		{
 			// dgst0.dat = "" (empty file)
 			// tcl_tests/dgst.try:63-65.
 			name:     "empty",
 			inputStr: "",
-			expect:   "8e945da209aa869f0455928529bcae4679e9873ab707b55315f56ceb98bef0a7362f715528356ee83cda5f2aac4c6ad2ba3a715c1bcd81cb8e9f90bf4c1c1a8a",
-			srcFile:  "tcl_tests/dgst.try",
-			srcLine:  64,
+			expect: "8e945da209aa869f0455928529bcae4679e9873ab707b55315f56ceb98bef0a7" +
+				"362f715528356ee83cda5f2aac4c6ad2ba3a715c1bcd81cb8e9f90bf4c1c1a8a",
+			srcFile: "tcl_tests/dgst.try",
+			srcLine: 64,
 		},
 		{
 			// dgst_CF.dat (carry test vector)
 			// Same 128-byte input as Streebog-256 carry vector above.
 			// Verified against etalon/carry and etalon/dgst.result line 8.
 			// tcl_tests/dgst.try:67-69 and etalon/dgst.result.
-			name:    "special-CF-128bytes",
-			inputHx: "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee16111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111116",
-			expect:  "8b06f41e59907d9636e892caf5942fcdfb71fa31169a5e70f0edb873664df41c2cce6e06dc6755d15a61cdeb92bd607cc4aaca6732bf3568a23a210dd520fd41",
+			name: "special-CF-128bytes",
+			inputHx: "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" +
+				"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" +
+				"1611111111111111111111111111111111111111111111111111111111111111" +
+				"1111111111111111111111111111111111111111111111111111111111111116",
+			expect: "8b06f41e59907d9636e892caf5942fcdfb71fa31169a5e70f0edb873664df41c" +
+				"2cce6e06dc6755d15a61cdeb92bd607cc4aaca6732bf3568a23a210dd520fd41",
 			srcFile: "tcl_tests/dgst.try",
 			srcLine: 68,
 		},
@@ -395,7 +413,9 @@ func TestGost_HMACStreebog512_EngineVectors(t *testing.T) {
 	input := []byte("012345678901234567890123456789012345678901234567890123456789012")
 	key := []byte("123456901234567890123456789012")
 
-	want, err := hex.DecodeString("3767bcbe31de0965a6cd2613d99cc8cda922e7b288478389ed9bd433abfc08ff61d9bd0257b2d14dd0648d04ebf056180b3c8739a7cd7f8a78dac856359fe26f")
+	want, err := hex.DecodeString(
+		"3767bcbe31de0965a6cd2613d99cc8cda922e7b288478389ed9bd433abfc08ff" +
+			"61d9bd0257b2d14dd0648d04ebf056180b3c8739a7cd7f8a78dac856359fe26f")
 	if err != nil {
 		t.Fatalf("hex.DecodeString: %v", err)
 	}

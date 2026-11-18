@@ -141,7 +141,8 @@ func TestDiff_CTRACPKM_vs_Oracle(t *testing.T) {
 
 						// Cross-check: chunked output must equal one-shot output.
 						if !bytes.Equal(refOut, refChunked) {
-							t.Fatalf("%s section=%d len=%d chunkSeed=%d oracle chunked != one-shot:\n one-shot %x\n chunked  %x",
+							t.Fatalf("%s section=%d len=%d chunkSeed=%d oracle chunked != one-shot:\n"+
+								" one-shot %x\n chunked  %x",
 								c.name, section, n, cs, refOut, refChunked)
 						}
 					}
@@ -169,7 +170,8 @@ func TestDiff_CTRACPKM_vs_Oracle(t *testing.T) {
 
 					// Cross-check: in-place must equal out-of-place.
 					if !bytes.Equal(refOut, refInPlace) {
-						t.Fatalf("%s section=%d len=%d oracle in-place != out-of-place:\n out-of-place %x\n in-place     %x",
+						t.Fatalf("%s section=%d len=%d oracle in-place != out-of-place:\n"+
+							" out-of-place %x\n in-place     %x",
 							c.name, section, n, refOut, refInPlace)
 					}
 				}
@@ -220,7 +222,9 @@ func FuzzDiff_CTRACPKM_vs_Oracle(f *testing.F) {
 		uint16(32), uint8(5), true,
 		[]byte("in-place test data for ctracpkm"))
 
-	f.Fuzz(func(t *testing.T, sel byte, rndKey, rndIV []byte, sectionRaw uint16, chunkSeed uint8, inPlace bool, plain []byte) {
+	f.Fuzz(func(t *testing.T, sel byte, rndKey, rndIV []byte,
+		sectionRaw uint16, chunkSeed uint8, inPlace bool, plain []byte,
+	) {
 		var (
 			newBlock func([]byte) cipher.Block
 			ivLen    int
@@ -356,7 +360,8 @@ func TestDiff_PlainCTR_vs_Oracle(t *testing.T) {
 				ctracpkm.NewCTR(c.blk(), c.iv).XORKeyStream(myInPlace, myInPlace)
 
 				if !bytes.Equal(refInPlace, myInPlace) {
-					t.Fatalf("%s plain CTR in-place len=%d divergence:\n ref %x\n new %x", c.name, n, refInPlace, myInPlace)
+					t.Fatalf("%s plain CTR in-place len=%d divergence:\n ref %x\n new %x",
+						c.name, n, refInPlace, myInPlace)
 				}
 
 				if !bytes.Equal(refOut, refInPlace) {

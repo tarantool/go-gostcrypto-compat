@@ -30,7 +30,9 @@ func TestOMAC_Kuznyechik_EngineOracle(t *testing.T) {
 		t.Fatalf("NewOMAC: %v", err)
 	}
 
-	omac.Write([]byte("hello"))
+	if _, err := omac.Write([]byte("hello")); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
 
 	got := omac.Sum(nil)
 
