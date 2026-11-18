@@ -53,7 +53,7 @@ func NewGOST28147IMITPlaceholderHash() hash.Hash {
 	c := gost28147.NewCipher(key, gost28147.SboxDefault)
 	iv := make([]byte, GOST28147BlockSize)
 
-	mac, err := c.NewMAC(4, iv)
+	mac, err := c.NewMAC(imitTagSize, iv)
 	if err != nil {
 		// NewMAC only fails on invalid size or IV length; both are hardcoded here.
 		panic("gost.NewGOST28147IMITPlaceholderHash: " + err.Error())
@@ -99,7 +99,8 @@ func (c *GOST28147Cipher) Decrypt(dst, src []byte) { c.inner.Decrypt(dst, src) }
 func (c *GOST28147Cipher) SeqMACBlock(block []byte) []byte {
 	zeroIV := make([]byte, GOST28147BlockSize)
 	mac, _ := c.inner.NewMAC(GOST28147BlockSize, zeroIV)
-	mac.Write(block)
+
+	_, _ = mac.Write(block) // gogost's MAC.Write never returns an error.
 
 	return mac.Sum(nil)
 }

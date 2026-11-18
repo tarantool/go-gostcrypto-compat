@@ -13,10 +13,22 @@ package gostcryptocompat
 //  3. expkeys = KDFTree2012_256(tmpkey, "kdf tree", ukmSource[16:24], 64).
 
 import (
+	"errors"
 	"fmt"
 
 	"go.stargrave.org/gogost/v7/gost3410"
 )
+
+// Fixed sizes (bytes) for KEG2012_256.
+const (
+	// kegUKMSourceSize is the KEG2012_256 ukmSource length.
+	kegUKMSourceSize = 32
+	// kegRealUKMSize is the length of the VKO UKM taken from ukmSource.
+	kegRealUKMSize = 16
+)
+
+// errKEGUKMSourceLen reports a ukmSource of the wrong length.
+var errKEGUKMSourceLen = errors.New("gost.KEG2012_256: ukmSource must be 32 bytes")
 
 // KEG2012_256 derives a 64-byte shared secret using the GOST 2018 KEG
 // algorithm on a 256-bit curve.
@@ -31,16 +43,16 @@ import (
 func KEG2012_256(curve *Curve, serverPubRaw, clientPrivRaw, ukmSource []byte) ([64]byte, error) {
 	var out [64]byte
 
-	if len(ukmSource) != 32 {
-		return out, fmt.Errorf("gost.KEG2012_256: ukmSource must be 32 bytes, got %d", len(ukmSource))
+	if len(ukmSource) != kegUKMSourceSize {
+		return out, fmt.Errorf("%w, got %d", errKEGUKMSourceLen, len(ukmSource))
 	}
 
 	// Step 1: derive realUKM — reverse of ukmSource[:16].
 	// If ukmSource[:16] is all zeros, set realUKM[15] = 1 (gost_keg:140-142).
-	realUKM := make([]byte, 16)
+	realUKM := make([]byte, kegRealUKMSize)
 	allZero := true
 
-	for _, b := range ukmSource[:16] {
+	for _, b := range ukmSource[:kegRealUKMSize] {
 		if b != 0 {
 			allZero = false
 			break
@@ -48,9 +60,9 @@ func KEG2012_256(curve *Curve, serverPubRaw, clientPrivRaw, ukmSource []byte) ([
 	}
 
 	if allZero {
-		realUKM[15] = 1
+		realUKM[kegRealUKMSize-1] = 1
 	} else {
-		copy(realUKM, ukmSource[:16])
+		copy(realUKM, ukmSource[:kegRealUKMSize])
 		reverseInPlace(realUKM)
 	}
 
@@ -74,7 +86,7 @@ func KEG2012_256(curve *Curve, serverPubRaw, clientPrivRaw, ukmSource []byte) ([
 
 	// Step 3: KDFTree2012_256 with label="kdf tree", seed=ukmSource[16:24].
 	// Reuses the KDFTree2012_256 helper from kdftree_gost.go.
-	expkeys := KDFTree2012_256(tmpkey, []byte("kdf tree"), ukmSource[16:24], 64)
+	expkeys := KDFTree2012_256(tmpkey, []byte("kdf tree"), ukmSource[16:24], len(out))
 	copy(out[:], expkeys)
 
 	return out, nil

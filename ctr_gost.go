@@ -18,13 +18,25 @@ package gostcryptocompat
 
 import (
 	"crypto/cipher"
+	"errors"
 	"fmt"
+)
+
+// acpkmKeySize is the ACPKM key length in bytes.
+const acpkmKeySize = 32
+
+// Sentinel errors for the CTR constructors' input validation.
+var (
+	errCTRIVLen      = errors.New("gost/ctr: iv length does not match block size")
+	errACPKMKeyLen   = errors.New("gost/ctr: ACPKM key length, want 32")
+	errCTRNegSection = errors.New("gost/ctr: negative sectionSize")
+	errCTRSectionMod = errors.New("gost/ctr: sectionSize not a multiple of block size")
 )
 
 // acpkmD is the fixed 32-byte constant fed to the current key's block cipher
 // during ACPKM key refresh. gost-engine gost89.c:247 (ACPKM_D_const) and
 // gost_grasshopper_cipher.c:155 (ACPKM_D_2018) — identical bytes.
-var acpkmD = [32]byte{
+var acpkmD = [acpkmKeySize]byte{
 	0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87,
 	0x88, 0x89, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x8f,
 	0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97,
@@ -52,7 +64,7 @@ type CTR struct {
 func NewCTR(block cipher.Block, iv []byte) (*CTR, error) {
 	bs := block.BlockSize()
 	if len(iv) != bs {
-		return nil, fmt.Errorf("gost/ctr: iv length %d does not match block size %d", len(iv), bs)
+		return nil, fmt.Errorf("%w: iv %d, block %d", errCTRIVLen, len(iv), bs)
 	}
 
 	liveCtr := make([]byte, bs)
@@ -86,23 +98,23 @@ func NewCTRACPKM(
 	iv []byte,
 	sectionSize int,
 ) (*CTR, error) {
-	if len(key) != 32 {
-		return nil, fmt.Errorf("gost/ctr: ACPKM key length %d, want 32", len(key))
+	if len(key) != acpkmKeySize {
+		return nil, fmt.Errorf("%w: got %d", errACPKMKeyLen, len(key))
 	}
 
 	block := newBlock(key)
 
 	bs := block.BlockSize()
 	if len(iv) != bs {
-		return nil, fmt.Errorf("gost/ctr: iv length %d does not match block size %d", len(iv), bs)
+		return nil, fmt.Errorf("%w: iv %d, block %d", errCTRIVLen, len(iv), bs)
 	}
 
 	if sectionSize < 0 {
-		return nil, fmt.Errorf("gost/ctr: negative sectionSize %d", sectionSize)
+		return nil, fmt.Errorf("%w: %d", errCTRNegSection, sectionSize)
 	}
 
 	if sectionSize != 0 && sectionSize%bs != 0 {
-		return nil, fmt.Errorf("gost/ctr: sectionSize %d not a multiple of block size %d", sectionSize, bs)
+		return nil, fmt.Errorf("%w: section %d, block %d", errCTRSectionMod, sectionSize, bs)
 	}
 
 	liveCtr := make([]byte, bs)
@@ -117,20 +129,6 @@ func NewCTRACPKM(
 		sectionSize: sectionSize,
 		sinceRekey:  0,
 	}, nil
-}
-
-// rekeyACPKM derives the next key by encrypting acpkmD block-by-block with
-// the current block cipher, then replaces the block with a fresh instance
-// keyed on those 32 bytes. Counter IV is untouched.
-func (c *CTR) rekeyACPKM() {
-	bs := c.block.BlockSize()
-
-	var newKey [32]byte
-	for i := 0; i < 32; i += bs {
-		c.block.Encrypt(newKey[i:i+bs], acpkmD[i:i+bs])
-	}
-
-	c.block = c.newBlock(newKey[:])
 }
 
 // XORKeyStream XORs each byte of src with the CTR gamma stream, writing the
@@ -171,6 +169,20 @@ func (c *CTR) XORKeyStream(dst, src []byte) {
 			c.num = 0
 		}
 	}
+}
+
+// rekeyACPKM derives the next key by encrypting acpkmD block-by-block with
+// the current block cipher, then replaces the block with a fresh instance
+// keyed on those 32 bytes. Counter IV is untouched.
+func (c *CTR) rekeyACPKM() {
+	bs := c.block.BlockSize()
+
+	var newKey [acpkmKeySize]byte
+	for i := 0; i < acpkmKeySize; i += bs {
+		c.block.Encrypt(newKey[i:i+bs], acpkmD[i:i+bs])
+	}
+
+	c.block = c.newBlock(newKey[:])
 }
 
 // incCounter increments a big-endian counter in-place. The last byte carries

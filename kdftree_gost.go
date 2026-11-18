@@ -23,20 +23,25 @@ import (
 // Output bytes are produced by chained HMAC-Streebog-256 with a 1-byte
 // big-endian iteration counter starting at 1.
 func KDFTree2012_256(key, label, seed []byte, keyOutLen int) []byte {
-	if keyOutLen <= 0 || keyOutLen%32 != 0 {
+	const (
+		hashSize    = gost34112012256.Size // HMAC-Streebog-256 output, bytes.
+		bitsPerByte = 8
+	)
+
+	if keyOutLen <= 0 || keyOutLen%hashSize != 0 {
 		panic("gost.KDFTree2012_256: keyOutLen must be a positive multiple of 32")
 	}
 
-	if keyOutLen > 0xFFFF/8 {
+	if keyOutLen > 0xFFFF/bitsPerByte {
 		panic("gost.KDFTree2012_256: keyOutLen too large for 2-byte length encoding")
 	}
 
 	out := make([]byte, keyOutLen)
 
 	var lenBE [2]byte
-	binary.BigEndian.PutUint16(lenBE[:], uint16(keyOutLen*8))
+	binary.BigEndian.PutUint16(lenBE[:], uint16(keyOutLen*bitsPerByte))
 
-	iters := keyOutLen / 32
+	iters := keyOutLen / hashSize
 	for i := 1; i <= iters; i++ {
 		h := hmac.New(gost34112012256.New, key)
 		h.Write([]byte{byte(i)})
@@ -44,7 +49,7 @@ func KDFTree2012_256(key, label, seed []byte, keyOutLen int) []byte {
 		h.Write([]byte{0x00})
 		h.Write(seed)
 		h.Write(lenBE[:])
-		copy(out[(i-1)*32:i*32], h.Sum(nil))
+		copy(out[(i-1)*hashSize:i*hashSize], h.Sum(nil))
 	}
 
 	return out
