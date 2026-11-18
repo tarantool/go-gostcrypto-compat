@@ -3,8 +3,9 @@ package gost3410signparity
 import (
 	"bytes"
 	"encoding/hex"
-	. "github.com/tarantool/go-gostcrypto/gost3410sign"
 	"testing"
+
+	. "github.com/tarantool/go-gostcrypto/gost3410sign"
 
 	gost "github.com/tarantool/go-gostcrypto-compat"
 	gogost3410 "go.stargrave.org/gogost/v7/gost3410"
@@ -44,13 +45,16 @@ func TestDiff_PinnedVector(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ref PublicKeyRawFromPrivate: %v", err)
 	}
+
 	newPub := PublicKeyRaw(newCurve, prv)
 	if newPub == nil {
 		t.Fatal("new PublicKeyRaw nil")
 	}
+
 	if !bytes.Equal(refPub, wantPub) {
 		t.Fatalf("ref pub %x != pin %x", refPub, wantPub)
 	}
+
 	if !bytes.Equal(newPub, refPub) {
 		t.Fatalf("pub mismatch ref=%x new=%x", refPub, newPub)
 	}
@@ -60,6 +64,7 @@ func TestDiff_PinnedVector(t *testing.T) {
 	if err != nil || !okRef {
 		t.Fatalf("ref verify pinned sig: ok=%v err=%v", okRef, err)
 	}
+
 	if !VerifyDigest(newCurve, wantPub, dig, sig) {
 		t.Fatal("new verify rejected pinned sig")
 	}
@@ -71,23 +76,28 @@ func TestDiff_PinnedVector(t *testing.T) {
 	if newSig == nil {
 		t.Fatal("new SignDigest nil for KAT nonce")
 	}
+
 	if !bytes.Equal(newSig, sig) {
 		t.Fatalf("new SignDigest != katSigSR:\n got %x\nwant %x", newSig, sig)
 	}
+
 	refSig, err := gost.SignDigestOnCurve(refCurve, prv, dig, bytes.NewReader(k))
 	if err != nil {
 		t.Fatalf("ref SignDigestOnCurve: %v", err)
 	}
+
 	if !bytes.Equal(refSig, sig) {
 		t.Fatalf("ref SignDigestOnCurve != katSigSR:\n got %x\nwant %x", refSig, sig)
 	}
 
 	// Tamper: both reject.
 	bad := append([]byte(nil), dig...)
+
 	bad[0] ^= 0x01
 	if VerifyDigest(newCurve, wantPub, bad, sig) {
 		t.Fatal("new accepted tampered digest")
 	}
+
 	if ok, _ := gost.VerifyDigestOnCurve(refCurve, wantPub, bad, sig); ok {
 		t.Fatal("ref accepted tampered digest")
 	}
@@ -105,6 +115,7 @@ func TestDiff_CrossVerifyRandom(t *testing.T) {
 		prv := make([]byte, 32)
 		dig := make([]byte, 32)
 		k := make([]byte, 32)
+
 		for i := range 32 {
 			prv[i] = byte(iter*7 + i*3 + 1)
 			dig[i] = byte(iter*5 + i*11 + 2)
@@ -116,10 +127,12 @@ func TestDiff_CrossVerifyRandom(t *testing.T) {
 		if err != nil {
 			t.Skipf("iter %d: ref key load failed: %v", iter, err)
 		}
+
 		newPub := PublicKeyRaw(newCurve, prv)
 		if newPub == nil {
 			t.Fatalf("iter %d: new PublicKeyRaw nil where ref ok", iter)
 		}
+
 		if !bytes.Equal(refPub, newPub) {
 			t.Fatalf("iter %d: pub mismatch ref=%x new=%x", iter, refPub, newPub)
 		}
@@ -129,6 +142,7 @@ func TestDiff_CrossVerifyRandom(t *testing.T) {
 		if err != nil {
 			t.Fatalf("iter %d: ref sign: %v", iter, err)
 		}
+
 		newSig := SignDigest(newCurve, prv, dig, k)
 		if newSig == nil {
 			t.Fatalf("iter %d: new sign nil", iter)
@@ -143,12 +157,15 @@ func TestDiff_CrossVerifyRandom(t *testing.T) {
 		if !VerifyDigest(newCurve, refPub, dig, refSig) {
 			t.Fatalf("iter %d: new failed to verify ref sig", iter)
 		}
+
 		if ok, err := gost.VerifyDigestOnCurve(refCurve, refPub, dig, newSig); err != nil || !ok {
 			t.Fatalf("iter %d: ref failed to verify new sig: ok=%v err=%v", iter, ok, err)
 		}
+
 		if !VerifyDigest(newCurve, refPub, dig, newSig) {
 			t.Fatalf("iter %d: new failed to verify new sig", iter)
 		}
+
 		if ok, err := gost.VerifyDigestOnCurve(refCurve, refPub, dig, refSig); err != nil || !ok {
 			t.Fatalf("iter %d: ref failed to verify ref sig: ok=%v err=%v", iter, ok, err)
 		}
@@ -190,10 +207,12 @@ func TestDiff_Pinned512_A2(t *testing.T) {
 	if err != nil {
 		t.Fatalf("gogost NewPrivateKey 512: %v", err)
 	}
+
 	refPubKey, err := refPrv.PublicKey()
 	if err != nil {
 		t.Fatalf("gogost PublicKey 512: %v", err)
 	}
+
 	refPub := refPubKey.Raw()
 
 	// Public keys must be byte-identical.
@@ -206,6 +225,7 @@ func TestDiff_Pinned512_A2(t *testing.T) {
 	if newSig == nil {
 		t.Fatal("new SignDigest 512 nil")
 	}
+
 	if !bytes.Equal(newSig, wantSig) {
 		t.Fatalf("new 512 SignDigest != A.2 KAT:\n got %x\nwant %x", newSig, wantSig)
 	}
@@ -214,6 +234,7 @@ func TestDiff_Pinned512_A2(t *testing.T) {
 	if err != nil {
 		t.Fatalf("gogost SignDigest 512: %v", err)
 	}
+
 	if !bytes.Equal(refSig, wantSig) {
 		t.Fatalf("ref 512 SignDigest != A.2 KAT:\n got %x\nwant %x", refSig, wantSig)
 	}
@@ -222,13 +243,16 @@ func TestDiff_Pinned512_A2(t *testing.T) {
 	if !VerifyDigest(newCurve, newPub, dig, newSig) {
 		t.Fatal("new 512 failed to verify new sig")
 	}
+
 	if !VerifyDigest(newCurve, newPub, dig, refSig) {
 		t.Fatal("new 512 failed to verify ref sig")
 	}
+
 	okRef, err := refPubKey.VerifyDigest(dig, refSig)
 	if err != nil || !okRef {
 		t.Fatalf("ref 512 failed to verify ref sig: ok=%v err=%v", okRef, err)
 	}
+
 	okRef, err = refPubKey.VerifyDigest(dig, newSig)
 	if err != nil || !okRef {
 		t.Fatalf("ref 512 failed to verify new sig: ok=%v err=%v", okRef, err)
@@ -236,10 +260,12 @@ func TestDiff_Pinned512_A2(t *testing.T) {
 
 	// Tamper: both reject.
 	bad := append([]byte(nil), dig...)
+
 	bad[0] ^= 0x01
 	if VerifyDigest(newCurve, newPub, bad, wantSig) {
 		t.Fatal("new 512 accepted tampered digest")
 	}
+
 	if ok, _ := refPubKey.VerifyDigest(bad, wantSig); ok {
 		t.Fatal("ref 512 accepted tampered digest")
 	}
@@ -258,6 +284,7 @@ func TestDiff_CrossVerify512(t *testing.T) {
 		prv := make([]byte, 64)
 		dig := make([]byte, 64)
 		k := make([]byte, 64)
+
 		for i := range 64 {
 			prv[i] = byte(iter*7 + i*3 + 1)
 			dig[i] = byte(iter*5 + i*11 + 2)
@@ -269,10 +296,12 @@ func TestDiff_CrossVerify512(t *testing.T) {
 		if err != nil {
 			t.Skipf("512 iter %d: ref key load failed: %v", iter, err)
 		}
+
 		newPub := PublicKeyRaw(newCurve, prv)
 		if newPub == nil {
 			t.Fatalf("512 iter %d: new PublicKeyRaw nil where ref ok", iter)
 		}
+
 		if !bytes.Equal(refPub, newPub) {
 			t.Fatalf("512 iter %d: pub mismatch ref=%x new=%x", iter, refPub, newPub)
 		}
@@ -282,6 +311,7 @@ func TestDiff_CrossVerify512(t *testing.T) {
 		if err != nil {
 			t.Fatalf("512 iter %d: ref sign: %v", iter, err)
 		}
+
 		newSig := SignDigest(newCurve, prv, dig, k)
 		if newSig == nil {
 			t.Fatalf("512 iter %d: new sign nil", iter)
@@ -296,6 +326,7 @@ func TestDiff_CrossVerify512(t *testing.T) {
 		if !VerifyDigest(newCurve, refPub, dig, refSig) {
 			t.Fatalf("512 iter %d: new failed to verify ref sig", iter)
 		}
+
 		if ok, err := gost.VerifyDigestOnCurve(refCurve, refPub, dig, newSig); err != nil || !ok {
 			t.Fatalf("512 iter %d: ref failed to verify new sig: ok=%v err=%v", iter, ok, err)
 		}
@@ -319,6 +350,7 @@ func TestDiff_RejectionParity(t *testing.T) {
 		if VerifyDigest(newCurve, pub, dig, shortSig) {
 			t.Fatal("new accepted short sig")
 		}
+
 		if ok, _ := gost.VerifyDigestOnCurve(refCurve, pub, dig, shortSig); ok {
 			t.Fatal("ref accepted short sig")
 		}
@@ -328,6 +360,7 @@ func TestDiff_RejectionParity(t *testing.T) {
 		if VerifyDigest(newCurve, pub, dig, longSig) {
 			t.Fatal("new accepted long sig")
 		}
+
 		if ok, _ := gost.VerifyDigestOnCurve(refCurve, pub, dig, longSig); ok {
 			t.Fatal("ref accepted long sig")
 		}
@@ -339,6 +372,7 @@ func TestDiff_RejectionParity(t *testing.T) {
 		if VerifyDigest(newCurve, shortPub, dig, sig) {
 			t.Fatal("new accepted short pub")
 		}
+
 		if ok, _ := gost.VerifyDigestOnCurve(refCurve, shortPub, dig, sig); ok {
 			t.Fatal("ref accepted short pub")
 		}
@@ -348,6 +382,7 @@ func TestDiff_RejectionParity(t *testing.T) {
 		if VerifyDigest(newCurve, longPub, dig, sig) {
 			t.Fatal("new accepted long pub")
 		}
+
 		if ok, _ := gost.VerifyDigestOnCurve(refCurve, longPub, dig, sig); ok {
 			t.Fatal("ref accepted long pub")
 		}
@@ -356,13 +391,16 @@ func TestDiff_RejectionParity(t *testing.T) {
 	// 3. r == 0 (second half zeroed): both must reject.
 	t.Run("r_zero", func(t *testing.T) {
 		ps := newCurve.PointSize()
+
 		badSig := append([]byte(nil), sig...)
 		for i := ps; i < 2*ps; i++ {
 			badSig[i] = 0x00
 		}
+
 		if VerifyDigest(newCurve, pub, dig, badSig) {
 			t.Fatal("new accepted sig with r=0")
 		}
+
 		if ok, _ := gost.VerifyDigestOnCurve(refCurve, pub, dig, badSig); ok {
 			t.Fatal("ref accepted sig with r=0")
 		}
@@ -371,13 +409,16 @@ func TestDiff_RejectionParity(t *testing.T) {
 	// 4. s == 0 (first half zeroed): both must reject.
 	t.Run("s_zero", func(t *testing.T) {
 		ps := newCurve.PointSize()
+
 		badSig := append([]byte(nil), sig...)
 		for i := range ps {
 			badSig[i] = 0x00
 		}
+
 		if VerifyDigest(newCurve, pub, dig, badSig) {
 			t.Fatal("new accepted sig with s=0")
 		}
+
 		if ok, _ := gost.VerifyDigestOnCurve(refCurve, pub, dig, badSig); ok {
 			t.Fatal("ref accepted sig with s=0")
 		}
@@ -391,16 +432,19 @@ func TestDiff_RejectionParity(t *testing.T) {
 		if VerifyDigest(newCurve, allZeroPub, dig, sig) {
 			t.Fatal("new accepted all-zero pub")
 		}
+
 		if ok, _ := gost.VerifyDigestOnCurve(refCurve, allZeroPub, dig, sig); ok {
 			t.Fatal("ref accepted all-zero pub")
 		}
 	})
 	t.Run("off_curve_pub_flipped", func(t *testing.T) {
 		flipped := append([]byte(nil), pub...)
+
 		flipped[0] ^= 0x01
 		if VerifyDigest(newCurve, flipped, dig, sig) {
 			t.Fatal("new accepted byte-flipped pub")
 		}
+
 		if ok, _ := gost.VerifyDigestOnCurve(refCurve, flipped, dig, sig); ok {
 			t.Fatal("ref accepted byte-flipped pub")
 		}
@@ -409,10 +453,12 @@ func TestDiff_RejectionParity(t *testing.T) {
 	// 6. Tampered signature bytes (not just digest): both must reject.
 	t.Run("tampered_sig_byte", func(t *testing.T) {
 		badSig := append([]byte(nil), sig...)
+
 		badSig[0] ^= 0x01
 		if VerifyDigest(newCurve, pub, dig, badSig) {
 			t.Fatal("new accepted sig with flipped sig byte")
 		}
+
 		if ok, _ := gost.VerifyDigestOnCurve(refCurve, pub, dig, badSig); ok {
 			t.Fatal("ref accepted sig with flipped sig byte")
 		}
@@ -423,6 +469,7 @@ func TestDiff_RejectionParity(t *testing.T) {
 		if VerifyDigest(newCurve, pub, dig, nil) {
 			t.Fatal("new accepted nil sig")
 		}
+
 		if ok, _ := gost.VerifyDigestOnCurve(refCurve, pub, dig, nil); ok {
 			t.Fatal("ref accepted nil sig")
 		}
@@ -431,6 +478,7 @@ func TestDiff_RejectionParity(t *testing.T) {
 		if VerifyDigest(newCurve, nil, dig, sig) {
 			t.Fatal("new accepted nil pub")
 		}
+
 		if ok, _ := gost.VerifyDigestOnCurve(refCurve, nil, dig, sig); ok {
 			t.Fatal("ref accepted nil pub")
 		}
@@ -443,6 +491,7 @@ func seedHex(s string) []byte {
 	if err != nil {
 		panic(err)
 	}
+
 	return b
 }
 
@@ -450,6 +499,7 @@ func seedHex(s string) []byte {
 func fixLen(b []byte, n int) []byte {
 	out := make([]byte, n)
 	copy(out, b)
+
 	return out
 }
 
@@ -505,10 +555,12 @@ func FuzzCrossVerify(f *testing.F) {
 		if err != nil {
 			t.Skipf("ref key load failed: %v", err)
 		}
+
 		newPub := PublicKeyRaw(newCurve, prv)
 		if newPub == nil {
 			t.Fatalf("new PublicKeyRaw nil where ref ok (prv=%x)", prv)
 		}
+
 		if !bytes.Equal(refPub, newPub) {
 			t.Fatalf("pub mismatch ref=%x new=%x", refPub, newPub)
 		}
@@ -519,6 +571,7 @@ func FuzzCrossVerify(f *testing.F) {
 			// A nonce of zero (or one reducing to zero mod q) is invalid.
 			t.Skipf("ref sign failed (likely degenerate nonce): %v", err)
 		}
+
 		newSig := SignDigest(newCurve, prv, dig, k)
 		if newSig == nil {
 			t.Skipf("new sign nil (likely degenerate nonce, prv=%x k=%x)", prv, k)
@@ -533,12 +586,15 @@ func FuzzCrossVerify(f *testing.F) {
 		if !VerifyDigest(newCurve, refPub, dig, refSig) {
 			t.Fatalf("new failed to verify ref sig (prv=%x dig=%x)", prv, dig)
 		}
+
 		if ok, err := gost.VerifyDigestOnCurve(refCurve, refPub, dig, newSig); err != nil || !ok {
 			t.Fatalf("ref failed to verify new sig: ok=%v err=%v (prv=%x dig=%x)", ok, err, prv, dig)
 		}
+
 		if !VerifyDigest(newCurve, refPub, dig, newSig) {
 			t.Fatalf("new failed to verify new sig (prv=%x dig=%x)", prv, dig)
 		}
+
 		if ok, err := gost.VerifyDigestOnCurve(refCurve, refPub, dig, refSig); err != nil || !ok {
 			t.Fatalf("ref failed to verify ref sig: ok=%v err=%v (prv=%x dig=%x)", ok, err, prv, dig)
 		}
@@ -552,13 +608,17 @@ func FuzzCrossVerify(f *testing.F) {
 		// false failure that is correct behaviour (same e → same sig → verifies).
 		if len(dig) > 0 {
 			bad := append([]byte(nil), dig...)
+
 			bad[0] ^= 0x01
+
 			eDig := effectiveE256(dig)
+
 			eBad := effectiveE256(bad)
 			if eDig.Cmp(eBad) != 0 {
 				if VerifyDigest(newCurve, refPub, bad, refSig) {
 					t.Fatalf("new accepted tampered digest (prv=%x dig=%x)", prv, dig)
 				}
+
 				if ok, _ := gost.VerifyDigestOnCurve(refCurve, refPub, bad, refSig); ok {
 					t.Fatalf("ref accepted tampered digest (prv=%x dig=%x)", prv, dig)
 				}

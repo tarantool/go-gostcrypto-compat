@@ -54,20 +54,25 @@ func TestDiffAgainstGost(t *testing.T) {
 	for iter := range 2048 {
 		key := make([]byte, 32)
 		rng.Read(key)
-		msg := make([]byte, rng.Intn(70)) // spans 0..>4 blocks for both sizes
+
+		msg := make([]byte, rng.Intn(70)) // spans 0..>4 blocks for both sizes.
 		rng.Read(msg)
 
 		// Kuznyechik, full 16-byte tag.
 		{
 			mine := mynew.New(kuznyechik.NewCipher(key), 16)
+
 			_, _ = mine.Write(msg)
+
 			got := mine.Sum(nil)
 
 			ref, err := gost.NewOMAC(gost.NewKuznyechikCipher(key), 16)
 			if err != nil {
 				t.Fatalf("gost.NewOMAC kuz: %v", err)
 			}
+
 			_, _ = ref.Write(msg)
+
 			want := ref.Sum(nil)
 
 			if !bytes.Equal(got, want) {
@@ -79,14 +84,18 @@ func TestDiffAgainstGost(t *testing.T) {
 		// Magma, full 8-byte tag.
 		{
 			mine := mynew.New(magma.NewCipher(key), 8)
+
 			_, _ = mine.Write(msg)
+
 			got := mine.Sum(nil)
 
 			ref, err := gost.NewOMAC(gost.NewMagmaCipher(key), 8)
 			if err != nil {
 				t.Fatalf("gost.NewOMAC magma: %v", err)
 			}
+
 			_, _ = ref.Write(msg)
+
 			want := ref.Sum(nil)
 
 			if !bytes.Equal(got, want) {
@@ -132,13 +141,17 @@ func TestDiffSumNonDestructive(t *testing.T) {
 			for iter := range 200 {
 				key := make([]byte, 32)
 				rng.Read(key)
+
 				half1 := make([]byte, rng.Intn(35))
 				rng.Read(half1)
+
 				half2 := make([]byte, rng.Intn(35))
 				rng.Read(half2)
+
 				tagSize := 1 + rng.Intn(pair.bs)
 
 				mine := pair.newMine(key, tagSize)
+
 				ref, err := pair.newRef(key, tagSize)
 				if err != nil {
 					t.Fatalf("oracle ctor: %v", err)
@@ -150,6 +163,7 @@ func TestDiffSumNonDestructive(t *testing.T) {
 
 				// Sum mid-stream (non-destructive check) — both sides must agree.
 				mid1 := mine.Sum(nil)
+
 				midR1 := ref.Sum(nil)
 				if !bytes.Equal(mid1, midR1) {
 					t.Fatalf("iter=%d mid-Sum mismatch:\n mine=%x ref=%x", iter, mid1, midR1)
@@ -158,9 +172,11 @@ func TestDiffSumNonDestructive(t *testing.T) {
 				// Sum again (idempotency): must return identical bytes.
 				mid2 := mine.Sum(nil)
 				midR2 := ref.Sum(nil)
+
 				if !bytes.Equal(mid1, mid2) {
 					t.Fatalf("iter=%d clean-room Sum not idempotent: first=%x second=%x", iter, mid1, mid2)
 				}
+
 				if !bytes.Equal(midR1, midR2) {
 					t.Fatalf("iter=%d oracle Sum not idempotent: first=%x second=%x", iter, midR1, midR2)
 				}
@@ -171,6 +187,7 @@ func TestDiffSumNonDestructive(t *testing.T) {
 
 				// Final Sum on both sides must agree.
 				got := mine.Sum(nil)
+
 				want := ref.Sum(nil)
 				if !bytes.Equal(got, want) {
 					t.Fatalf("iter=%d continuation mismatch:\n mine=%x ref=%x", iter, got, want)
@@ -179,7 +196,9 @@ func TestDiffSumNonDestructive(t *testing.T) {
 				// Cross-check: result must equal a fresh instance over the full message.
 				full := append(append([]byte{}, half1...), half2...)
 				fresh := pair.newMine(key, tagSize)
+
 				_, _ = fresh.Write(full)
+
 				expected := fresh.Sum(nil)
 				if !bytes.Equal(got, expected) {
 					t.Fatalf("iter=%d continuation != fresh: got=%x expected=%x", iter, got, expected)
@@ -238,18 +257,24 @@ func FuzzDiffAgainstGost(f *testing.F) {
 	f.Fuzz(func(t *testing.T, sel byte, rndKey, msg []byte, split uint, tagSizeHint byte) {
 		key := fixLen(rndKey, 32)
 
-		var mine *mynew.OMAC
-		var ref *gost.OMAC
-		var err error
+		var (
+			mine *mynew.OMAC
+			ref  *gost.OMAC
+			err  error
+		)
+
 		if sel&1 == 0 {
 			tagSize := 1 + int(tagSizeHint)%16 // [1, 16]
+
 			mine = mynew.New(kuznyechik.NewCipher(key), tagSize)
 			ref, err = gost.NewOMAC(gost.NewKuznyechikCipher(key), tagSize)
 		} else {
 			tagSize := 1 + int(tagSizeHint)%8 // [1, 8]
+
 			mine = mynew.New(magma.NewCipher(key), tagSize)
 			ref, err = gost.NewOMAC(gost.NewMagmaCipher(key), tagSize)
 		}
+
 		if err != nil {
 			t.Fatalf("gost.NewOMAC: %v", err)
 		}
@@ -262,6 +287,7 @@ func FuzzDiffAgainstGost(f *testing.F) {
 			off1 := int((split / uint(n+1)) % uint(n+1))
 			cuts := []int{off0, off1}
 			sort.Ints(cuts)
+
 			prev := 0
 			for _, c := range cuts {
 				if c > prev {
@@ -269,14 +295,17 @@ func FuzzDiffAgainstGost(f *testing.F) {
 					prev = c
 				}
 			}
+
 			_, _ = mine.Write(msg[prev:])
 		} else {
 			_, _ = mine.Write(msg)
 		}
+
 		got := mine.Sum(nil)
 
 		// Oracle side: one-shot.
 		_, _ = ref.Write(msg)
+
 		want := ref.Sum(nil)
 
 		if !bytes.Equal(got, want) {
@@ -328,7 +357,9 @@ func TestDiffTruncatedKATs(t *testing.T) {
 			want := mustHex(t, tc.want)
 
 			mine := tc.newMine(key, tc.tagSize)
+
 			_, _ = mine.Write(msg)
+
 			got := mine.Sum(nil)
 			if !bytes.Equal(got, want) {
 				t.Fatalf("clean-room: got %x want %x", got, want)
@@ -338,7 +369,9 @@ func TestDiffTruncatedKATs(t *testing.T) {
 			if err != nil {
 				t.Fatalf("oracle ctor: %v", err)
 			}
+
 			_, _ = ref.Write(msg)
+
 			r := ref.Sum(nil)
 			if !bytes.Equal(r, want) {
 				t.Fatalf("oracle: got %x want %x", r, want)
@@ -361,7 +394,8 @@ func TestDiffAgainstAEAD(t *testing.T) {
 	for iter := range 2048 {
 		key := make([]byte, 32)
 		rng.Read(key)
-		msg := make([]byte, rng.Intn(70)) // spans 0..>4 blocks for both sizes
+
+		msg := make([]byte, rng.Intn(70)) // spans 0..>4 blocks for both sizes.
 
 		rng.Read(msg)
 
@@ -370,14 +404,18 @@ func TestDiffAgainstAEAD(t *testing.T) {
 			tagSize := 1 + rng.Intn(16)
 
 			mine := mynew.New(kuznyechik.NewCipher(key), tagSize)
+
 			_, _ = mine.Write(msg)
+
 			got := mine.Sum(nil)
 
 			ref, err := aeadcmac.NewWithTagSize(kuznyechik.NewCipher(key), tagSize)
 			if err != nil {
 				t.Fatalf("aead/cmac kuz: %v", err)
 			}
+
 			_, _ = ref.Write(msg)
+
 			want := ref.Sum(nil)
 
 			if !bytes.Equal(got, want) {
@@ -391,14 +429,18 @@ func TestDiffAgainstAEAD(t *testing.T) {
 			tagSize := 1 + rng.Intn(8)
 
 			mine := mynew.New(magma.NewCipher(key), tagSize)
+
 			_, _ = mine.Write(msg)
+
 			got := mine.Sum(nil)
 
 			ref, err := aeadcmac.NewWithTagSize(magma.NewCipher(key), tagSize)
 			if err != nil {
 				t.Fatalf("aead/cmac magma: %v", err)
 			}
+
 			_, _ = ref.Write(msg)
+
 			want := ref.Sum(nil)
 
 			if !bytes.Equal(got, want) {
@@ -453,7 +495,9 @@ func TestAEADAgainstKATs(t *testing.T) {
 			if err != nil {
 				t.Fatalf("aead/cmac ctor: %v", err)
 			}
+
 			_, _ = h.Write(msg)
+
 			got := h.Sum(nil)
 			if !bytes.Equal(got, want) {
 				t.Fatalf("aead/cmac: got %x want %x", got, want)
@@ -498,21 +542,27 @@ func FuzzDiffAgainstAEAD(f *testing.F) {
 	f.Fuzz(func(t *testing.T, sel byte, rndKey, msg []byte, split uint, tagSizeHint byte) {
 		key := fixLen(rndKey, 32)
 
-		var mine *mynew.OMAC
-		var ref interface {
-			Write([]byte) (int, error)
-			Sum([]byte) []byte
-		}
-		var err error
+		var (
+			mine *mynew.OMAC
+			ref  interface {
+				Write([]byte) (int, error)
+				Sum([]byte) []byte
+			}
+			err error
+		)
+
 		if sel&1 == 0 {
 			tagSize := 1 + int(tagSizeHint)%16 // [1, 16]
+
 			mine = mynew.New(kuznyechik.NewCipher(key), tagSize)
 			ref, err = aeadcmac.NewWithTagSize(kuznyechik.NewCipher(key), tagSize)
 		} else {
 			tagSize := 1 + int(tagSizeHint)%8 // [1, 8]
+
 			mine = mynew.New(magma.NewCipher(key), tagSize)
 			ref, err = aeadcmac.NewWithTagSize(magma.NewCipher(key), tagSize)
 		}
+
 		if err != nil {
 			t.Fatalf("aead/cmac ctor: %v", err)
 		}
@@ -524,6 +574,7 @@ func FuzzDiffAgainstAEAD(f *testing.F) {
 			off1 := int((split / uint(n+1)) % uint(n+1))
 			cuts := []int{off0, off1}
 			sort.Ints(cuts)
+
 			prev := 0
 			for _, c := range cuts {
 				if c > prev {
@@ -531,14 +582,17 @@ func FuzzDiffAgainstAEAD(f *testing.F) {
 					prev = c
 				}
 			}
+
 			_, _ = mine.Write(msg[prev:])
 		} else {
 			_, _ = mine.Write(msg)
 		}
+
 		got := mine.Sum(nil)
 
 		// Independent oracle side: one-shot.
 		_, _ = ref.Write(msg)
+
 		want := ref.Sum(nil)
 
 		if !bytes.Equal(got, want) {

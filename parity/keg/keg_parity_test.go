@@ -3,9 +3,10 @@ package kegparity
 import (
 	"bytes"
 	"encoding/asn1"
+	"testing"
+
 	"github.com/tarantool/go-gostcrypto/gost3410curves"
 	. "github.com/tarantool/go-gostcrypto/keg"
-	"testing"
 
 	gost "github.com/tarantool/go-gostcrypto-compat"
 )
@@ -14,6 +15,7 @@ import (
 func fixLen(b []byte, n int) []byte {
 	out := make([]byte, n)
 	copy(out, b)
+
 	return out
 }
 
@@ -22,10 +24,12 @@ var tc26256AOID = asn1.ObjectIdentifier{1, 2, 643, 7, 1, 2, 1, 1, 1}
 
 func oracleCurve(t testing.TB) *gost.Curve {
 	t.Helper()
+
 	c, err := gost.CurveByOID(tc26256AOID)
 	if err != nil {
 		t.Fatalf("oracle CurveByOID: %v", err)
 	}
+
 	return c
 }
 
@@ -37,8 +41,8 @@ func oracleCurve(t testing.TB) *gost.Curve {
 //	TC26-256-D == CryptoPro-C (distinct OIDs but same curve constants).
 var curve256OIDs = []struct {
 	name      string
-	cleanRoom string                // dotted-decimal for gost3410curves.CurveByOID
-	oracle    asn1.ObjectIdentifier // for gost.CurveByOID
+	cleanRoom string                // dotted-decimal for gost3410curves.CurveByOID.
+	oracle    asn1.ObjectIdentifier // for gost.CurveByOID.
 }{
 	{"CryptoPro-A", "1.2.643.2.2.35.1", asn1.ObjectIdentifier{1, 2, 643, 2, 2, 35, 1}},
 	{"CryptoPro-B", "1.2.643.2.2.35.2", asn1.ObjectIdentifier{1, 2, 643, 2, 2, 35, 2}},
@@ -74,6 +78,7 @@ func TestKEG2012_256_DiffOracle(t *testing.T) {
 			if err != nil {
 				t.Fatalf("oracle KEG: %v", err)
 			}
+
 			if !bytes.Equal(ref[:], want) {
 				t.Fatalf("oracle != pinned vector:\n ref %x\nwant %x", ref[:], want)
 			}
@@ -87,6 +92,7 @@ func TestKEG2012_256_DiffOracle(t *testing.T) {
 			if err != nil {
 				t.Fatalf("clean-room KEG: %v", err)
 			}
+
 			if got != ref {
 				t.Fatalf("clean-room != oracle:\n got %x\n ref %x", got[:], ref[:])
 			}
@@ -106,7 +112,7 @@ func TestKEG2012_256_DiffEphemeral(t *testing.T) {
 	}
 	ukms := [][]byte{
 		mustHex(t, ukmHex),
-		make([]byte, 32), // all-zero first 16 bytes → real_ukm special case
+		make([]byte, 32), // all-zero first 16 bytes → real_ukm special case.
 		bytes.Repeat([]byte{0xff}, 32),
 	}
 
@@ -115,6 +121,7 @@ func TestKEG2012_256_DiffEphemeral(t *testing.T) {
 		if err != nil {
 			t.Fatalf("seed %d: gen A: %v", si, err)
 		}
+
 		privB, pubB, err := gost.GenerateEphemeralKey(curve, bytes.NewReader(sp[1]))
 		if err != nil {
 			t.Fatalf("seed %d: gen B: %v", si, err)
@@ -125,12 +132,14 @@ func TestKEG2012_256_DiffEphemeral(t *testing.T) {
 			if err != nil {
 				t.Fatalf("seed %d ukm %d: oracle: %v", si, ui, err)
 			}
+
 			// nil selects keg's default TC26 256-A, the same domain as the
 			// oracle curve (see TestKEG2012_256_DiffOracle for the rationale).
 			got, err := KEG2012_256(nil, pubB, privA, ukm)
 			if err != nil {
 				t.Fatalf("seed %d ukm %d: clean-room: %v", si, ui, err)
 			}
+
 			if got != ref {
 				t.Fatalf("seed %d ukm %d: clean-room != oracle\n got %x\n ref %x",
 					si, ui, got[:], ref[:])
@@ -141,6 +150,7 @@ func TestKEG2012_256_DiffEphemeral(t *testing.T) {
 			if err != nil {
 				t.Fatalf("seed %d ukm %d: clean-room sym: %v", si, ui, err)
 			}
+
 			if sym != got {
 				t.Fatalf("seed %d ukm %d: not pair-symmetric\n A→B %x\n B→A %x",
 					si, ui, got[:], sym[:])
@@ -155,7 +165,7 @@ func TestKEG2012_256_DiffEphemeral(t *testing.T) {
 // through its own registry to confirm byte-for-byte parity on every 256-bit
 // paramset, including the CryptoPro curves real production certificates use.
 //
-// Findings: KEG-01
+// Findings: KEG-01.
 func TestKEG2012_256_MultiCurve(t *testing.T) {
 	seedA := bytes.Repeat([]byte{0x11}, 32)
 	seedB := bytes.Repeat([]byte{0x22}, 32)
@@ -167,6 +177,7 @@ func TestKEG2012_256_MultiCurve(t *testing.T) {
 			if err != nil {
 				t.Fatalf("oracle CurveByOID(%s): %v", entry.name, err)
 			}
+
 			crCurve, err := gost3410curves.CurveByOID(entry.cleanRoom)
 			if err != nil {
 				t.Fatalf("clean-room CurveByOID(%s): %v", entry.name, err)
@@ -177,6 +188,7 @@ func TestKEG2012_256_MultiCurve(t *testing.T) {
 			if err != nil {
 				t.Fatalf("gen A: %v", err)
 			}
+
 			privB, pubB, err := gost.GenerateEphemeralKey(oracleCrv, bytes.NewReader(seedB))
 			if err != nil {
 				t.Fatalf("gen B: %v", err)
@@ -186,10 +198,12 @@ func TestKEG2012_256_MultiCurve(t *testing.T) {
 			if err != nil {
 				t.Fatalf("oracle KEG(%s): %v", entry.name, err)
 			}
+
 			got, err := KEG2012_256(crCurve, pubB, privA, ukm)
 			if err != nil {
 				t.Fatalf("clean-room KEG(%s): %v", entry.name, err)
 			}
+
 			if got != ref {
 				t.Fatalf("clean-room != oracle (%s)\n got %x\n ref %x",
 					entry.name, got[:], ref[:])
@@ -201,6 +215,7 @@ func TestKEG2012_256_MultiCurve(t *testing.T) {
 			if err != nil {
 				t.Fatalf("clean-room sym KEG(%s): %v", entry.name, err)
 			}
+
 			if sym != got {
 				t.Fatalf("not pair-symmetric (%s)\n A→B %x\n B→A %x",
 					entry.name, got[:], sym[:])
@@ -229,7 +244,7 @@ const zeroUKMWantHex = "1f28179da81185e6019a6bc43568b9d8be3788111c50dff78b2a0425
 // TestKEG2012_256_ZeroUKM_KAT pins the zero-UKM special-case output against
 // the engine-derived vector above, then diffs clean-room against oracle.
 //
-// Findings: KEG-03
+// Findings: KEG-03.
 func TestKEG2012_256_ZeroUKM_KAT(t *testing.T) {
 	curve := oracleCurve(t)
 	want := mustHex(t, zeroUKMWantHex)
@@ -242,6 +257,7 @@ func TestKEG2012_256_ZeroUKM_KAT(t *testing.T) {
 	if err != nil {
 		t.Fatalf("clean-room zero-UKM KEG: %v", err)
 	}
+
 	if !bytes.Equal(got[:], want) {
 		t.Fatalf("clean-room zero-UKM KAT mismatch:\n got %x\nwant %x", got[:], want)
 	}
@@ -251,6 +267,7 @@ func TestKEG2012_256_ZeroUKM_KAT(t *testing.T) {
 	if err != nil {
 		t.Fatalf("oracle zero-UKM KEG: %v", err)
 	}
+
 	if ref != got {
 		t.Fatalf("oracle != clean-room zero-UKM:\n got %x\n ref %x", got[:], ref[:])
 	}
@@ -266,7 +283,7 @@ func TestKEG2012_256_ZeroUKM_KAT(t *testing.T) {
 // test would need 64/128-byte keys on the oracle side to even parse, making
 // the error sources structurally asymmetric — that case is out of scope here.
 //
-// Findings: KEG-05
+// Findings: KEG-05.
 func TestKEG2012_256_ErrorParity(t *testing.T) {
 	curve := oracleCurve(t)
 	goodPub := mustHex(t, pubBHex)
@@ -291,10 +308,12 @@ func TestKEG2012_256_ErrorParity(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			_, oracleErr := gost.KEG2012_256(curve, tc.pub, tc.priv, tc.ukm)
+
 			_, cleanErr := KEG2012_256(nil, tc.pub, tc.priv, tc.ukm)
 			if oracleErr == nil {
 				t.Errorf("oracle accepted malformed input (%s)", tc.name)
 			}
+
 			if cleanErr == nil {
 				t.Errorf("clean-room accepted malformed input (%s)", tc.name)
 			}
@@ -312,7 +331,7 @@ func TestKEG2012_256_ErrorParity(t *testing.T) {
 // Seeds and UKM are normalized to 32 bytes. Invalid generator inputs are
 // skipped only when both sides agree on the skip (never to hide a mismatch).
 //
-// Findings: KEG-02, KEG-04, KEG-06 (raw-bytes mode)
+// Findings: KEG-02, KEG-04, KEG-06 (raw-bytes mode).
 func FuzzKEG2012_256_DiffOracle(f *testing.F) {
 	// Seed 0: TC26-256-A (index 3), KAT keys.
 	f.Add(seedHex(privAHex), seedHex(privBHex), seedHex(ukmHex), byte(3))
@@ -336,6 +355,7 @@ func FuzzKEG2012_256_DiffOracle(f *testing.F) {
 		if err != nil {
 			t.Fatalf("oracle CurveByOID(%s): %v", entry.name, err)
 		}
+
 		crCurve, err := gost3410curves.CurveByOID(entry.cleanRoom)
 		if err != nil {
 			t.Fatalf("clean-room CurveByOID(%s): %v", entry.name, err)
@@ -349,6 +369,7 @@ func FuzzKEG2012_256_DiffOracle(f *testing.F) {
 		if err != nil {
 			t.Skipf("gen A: %v", err)
 		}
+
 		privB, pubB, err := gost.GenerateEphemeralKey(oracleCrv, bytes.NewReader(sb))
 		if err != nil {
 			t.Skipf("gen B: %v", err)
@@ -357,16 +378,19 @@ func FuzzKEG2012_256_DiffOracle(f *testing.F) {
 		// KEG-04 fix: run both sides before skipping. Both must agree on
 		// success vs failure; skipping is only safe when both error.
 		ref, oracleErr := gost.KEG2012_256(oracleCrv, pubB, privA, ukm)
+
 		got, cleanErr := KEG2012_256(crCurve, pubB, privA, ukm)
 		if (oracleErr == nil) != (cleanErr == nil) {
 			t.Fatalf("oracle/clean-room error mismatch (%s): oracle=%v clean-room=%v",
 				entry.name, oracleErr, cleanErr)
 		}
+
 		if oracleErr != nil {
 			// Both sides reject — safe to skip.
 			t.Skipf("both sides reject (%s): oracle=%v clean-room=%v",
 				entry.name, oracleErr, cleanErr)
 		}
+
 		if got != ref {
 			t.Fatalf("clean-room != oracle (%s)\n got %x\n ref %x",
 				entry.name, got[:], ref[:])
@@ -377,6 +401,7 @@ func FuzzKEG2012_256_DiffOracle(f *testing.F) {
 		if err != nil {
 			t.Fatalf("clean-room sym (%s): %v", entry.name, err)
 		}
+
 		if sym != got {
 			t.Fatalf("not pair-symmetric (%s)\n A→B %x\n B→A %x",
 				entry.name, got[:], sym[:])
@@ -396,7 +421,7 @@ func FuzzKEG2012_256_DiffOracle(f *testing.F) {
 // clean-room-rejects on the pub is skipped with a note. The reverse
 // (clean-room accepts / oracle rejects) would still be a fatal.
 //
-// Findings: KEG-06
+// Findings: KEG-06.
 func FuzzKEG2012_256_RawInputs(f *testing.F) {
 	// Seed 0: KAT valid inputs on TC26-256-A (both sides succeed).
 	f.Add(seedHex(pubBHex), seedHex(privAHex), seedHex(ukmHex), byte(3))
@@ -415,6 +440,7 @@ func FuzzKEG2012_256_RawInputs(f *testing.F) {
 		if err != nil {
 			t.Fatalf("oracle CurveByOID(%s): %v", entry.name, err)
 		}
+
 		crCurve, err := gost3410curves.CurveByOID(entry.cleanRoom)
 		if err != nil {
 			t.Fatalf("clean-room CurveByOID(%s): %v", entry.name, err)
@@ -435,12 +461,14 @@ func FuzzKEG2012_256_RawInputs(f *testing.F) {
 			t.Skipf("clean-room stricter than oracle (%s): clean-room=%v pub=%x",
 				entry.name, cleanErr, pub)
 		}
+
 		// The other direction (clean-room accepts, oracle rejects) would
 		// indicate a real parity failure.
 		if oracleErr != nil && cleanErr == nil {
 			t.Fatalf("clean-room accepted what oracle rejected (%s): oracle=%v pub=%x priv=%x",
 				entry.name, oracleErr, pub, priv)
 		}
+
 		// When both accept, outputs must match.
 		if oracleErr == nil && cleanErr == nil && got != ref {
 			t.Fatalf("output mismatch (%s)\n got %x\n ref %x", entry.name, got[:], ref[:])

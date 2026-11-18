@@ -30,14 +30,18 @@ import (
 func xorKeyStreamChunked(s cipher.Stream, dst, src []byte, chunkSeed uint8) {
 	off := 0
 	step := chunkSeed
+
 	n := len(src)
 	for off < n {
 		chunk := 1 + int(step%13)
 		if off+chunk > n {
 			chunk = n - off
 		}
+
 		s.XORKeyStream(dst[off:off+chunk], src[off:off+chunk])
+
 		off += chunk
+
 		step = step*31 + 7
 	}
 }
@@ -61,6 +65,7 @@ func TestDiff_CTRACPKM_vs_Oracle(t *testing.T) {
 		sections []int
 		lengths  []int
 	}
+
 	cases := []tc{
 		{
 			name:     "kuznyechik",
@@ -85,6 +90,7 @@ func TestDiff_CTRACPKM_vs_Oracle(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			iv := make([]byte, c.ivLen)
 			copy(iv, []byte{0x12, 0x34, 0x56, 0x78})
+
 			for _, section := range c.sections {
 				for _, n := range c.lengths {
 					plain := make([]byte, n)
@@ -92,11 +98,12 @@ func TestDiff_CTRACPKM_vs_Oracle(t *testing.T) {
 						plain[i] = byte(i*7 + 3)
 					}
 
-					// --- one-shot out-of-place ---
+					// --- one-shot out-of-place ---.
 					oracle, err := ref.NewCTRACPKM(c.newBlock, key, iv, section)
 					if err != nil {
 						t.Fatalf("oracle NewCTRACPKM(section=%d): %v", section, err)
 					}
+
 					refOut := make([]byte, n)
 					oracle.XORKeyStream(refOut, plain)
 
@@ -109,12 +116,13 @@ func TestDiff_CTRACPKM_vs_Oracle(t *testing.T) {
 							c.name, section, n, refOut, myOut)
 					}
 
-					// --- chunked streaming (CTRA-01 / CTRA-04) ---
+					// --- chunked streaming (CTRA-01 / CTRA-04) ---.
 					for _, cs := range chunkSeeds {
 						oracleC, err := ref.NewCTRACPKM(c.newBlock, key, iv, section)
 						if err != nil {
 							t.Fatalf("oracle NewCTRACPKM(section=%d) chunked: %v", section, err)
 						}
+
 						refChunked := make([]byte, n)
 						xorKeyStreamChunked(oracleC, refChunked, plain, cs)
 
@@ -126,6 +134,7 @@ func TestDiff_CTRACPKM_vs_Oracle(t *testing.T) {
 							t.Fatalf("%s section=%d len=%d chunkSeed=%d chunked divergence:\n ref %x\n new %x",
 								c.name, section, n, cs, refChunked, myChunked)
 						}
+
 						// Cross-check: chunked output must equal one-shot output.
 						if !bytes.Equal(refOut, refChunked) {
 							t.Fatalf("%s section=%d len=%d chunkSeed=%d oracle chunked != one-shot:\n one-shot %x\n chunked  %x",
@@ -133,17 +142,19 @@ func TestDiff_CTRACPKM_vs_Oracle(t *testing.T) {
 						}
 					}
 
-					// --- in-place dst==src (CTRA-06) ---
+					// --- in-place dst==src (CTRA-06) ---.
 					oracleIP, err := ref.NewCTRACPKM(c.newBlock, key, iv, section)
 					if err != nil {
 						t.Fatalf("oracle NewCTRACPKM(section=%d) in-place: %v", section, err)
 					}
+
 					refInPlace := make([]byte, n)
 					copy(refInPlace, plain)
 					oracleIP.XORKeyStream(refInPlace, refInPlace)
 
 					mineInPlace := make([]byte, n)
 					copy(mineInPlace, plain)
+
 					mineIP := ctracpkm.NewCTRACPKM(c.newBlock, key, iv, section)
 					mineIP.XORKeyStream(mineInPlace, mineInPlace)
 
@@ -151,6 +162,7 @@ func TestDiff_CTRACPKM_vs_Oracle(t *testing.T) {
 						t.Fatalf("%s section=%d len=%d in-place divergence:\n ref %x\n new %x",
 							c.name, section, n, refInPlace, mineInPlace)
 					}
+
 					// Cross-check: in-place must equal out-of-place.
 					if !bytes.Equal(refOut, refInPlace) {
 						t.Fatalf("%s section=%d len=%d oracle in-place != out-of-place:\n out-of-place %x\n in-place     %x",
@@ -173,31 +185,31 @@ func TestDiff_CTRACPKM_vs_Oracle(t *testing.T) {
 //   - chunked streaming via a fuzzer-chosen chunkSeed (CTRA-01/04)
 //   - in-place XORKeyStream dst==src (CTRA-06)
 func FuzzDiff_CTRACPKM_vs_Oracle(f *testing.F) {
-	// seed#0: Kuznyechik, section=32, out-of-place, chunkSeed=7
+	// seed#0: Kuznyechik, section=32, out-of-place, chunkSeed=7.
 	f.Add(byte(0),
 		seedHex("8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef"),
 		seedHex("12345678000000000000000000000000"),
 		uint16(32), uint8(7), false,
 		[]byte("hello ctr-acpkm world, this is a longer plaintext"))
-	// seed#1: Magma, section=8, out-of-place, chunkSeed=13
+	// seed#1: Magma, section=8, out-of-place, chunkSeed=13.
 	f.Add(byte(1),
 		seedHex("8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef"),
 		seedHex("1234567800000000"),
 		uint16(8), uint8(13), false,
 		make([]byte, 100))
-	// seed#2: Kuznyechik, section=0 (plain CTR), chunkSeed=1
+	// seed#2: Kuznyechik, section=0 (plain CTR), chunkSeed=1.
 	f.Add(byte(0),
 		seedHex("8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef"),
 		seedHex("12345678000000000000000000000000"),
 		uint16(0), uint8(1), false,
 		make([]byte, 33))
-	// seed#3: Magma, section=1024 (ACPKM boundary crossing), chunkSeed=17
+	// seed#3: Magma, section=1024 (ACPKM boundary crossing), chunkSeed=17.
 	f.Add(byte(1),
 		seedHex("8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef"),
 		seedHex("1234567800000000"),
 		uint16(1024), uint8(17), false,
 		make([]byte, 1025))
-	// seed#4: Kuznyechik, in-place variant
+	// seed#4: Kuznyechik, in-place variant.
 	f.Add(byte(0),
 		seedHex("8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef"),
 		seedHex("12345678000000000000000000000000"),
@@ -205,9 +217,12 @@ func FuzzDiff_CTRACPKM_vs_Oracle(f *testing.F) {
 		[]byte("in-place test data for ctracpkm"))
 
 	f.Fuzz(func(t *testing.T, sel byte, rndKey, rndIV []byte, sectionRaw uint16, chunkSeed uint8, inPlace bool, plain []byte) {
-		var newBlock func([]byte) cipher.Block
-		var ivLen int
-		var bs int
+		var (
+			newBlock func([]byte) cipher.Block
+			ivLen    int
+			bs       int
+		)
+
 		if sel&1 == 0 {
 			newBlock = func(k []byte) cipher.Block { return kuznyechik.NewCipher(k) }
 			ivLen = 16
@@ -217,6 +232,7 @@ func FuzzDiff_CTRACPKM_vs_Oracle(f *testing.F) {
 			ivLen = 8
 			bs = 8
 		}
+
 		key := fixLen(rndKey, 32)
 		iv := fixLen(rndIV, ivLen)
 
@@ -232,6 +248,7 @@ func FuzzDiff_CTRACPKM_vs_Oracle(f *testing.F) {
 			if k == 0 {
 				k = 1
 			}
+
 			section = k * bs
 		}
 
@@ -244,6 +261,7 @@ func FuzzDiff_CTRACPKM_vs_Oracle(f *testing.F) {
 		if err != nil {
 			t.Fatalf("oracle NewCTRACPKM(section=%d): %v (should not fail after normalization)", section, err)
 		}
+
 		mine := ctracpkm.NewCTRACPKM(newBlock, key, iv, section)
 
 		n := len(plain)
@@ -251,11 +269,11 @@ func FuzzDiff_CTRACPKM_vs_Oracle(f *testing.F) {
 		myOut := make([]byte, n)
 
 		if !inPlace {
-			// --- out-of-place chunked streaming ---
+			// --- out-of-place chunked streaming ---.
 			xorKeyStreamChunked(oracle, refOut, plain, chunkSeed)
 			xorKeyStreamChunked(mine, myOut, plain, chunkSeed)
 		} else {
-			// --- in-place dst==src (CTRA-06) ---
+			// --- in-place dst==src (CTRA-06) ---.
 			copy(refOut, plain)
 			oracle.XORKeyStream(refOut, refOut)
 			copy(myOut, plain)
@@ -303,6 +321,7 @@ func TestDiff_PlainCTR_vs_Oracle(t *testing.T) {
 				if err != nil {
 					t.Fatalf("oracle NewCTR: %v", err)
 				}
+
 				refOut := make([]byte, n)
 				oracle.XORKeyStream(refOut, plain)
 
@@ -313,13 +332,15 @@ func TestDiff_PlainCTR_vs_Oracle(t *testing.T) {
 					t.Fatalf("%s plain CTR len=%d divergence:\n ref %x\n new %x", c.name, n, refOut, myOut)
 				}
 
-				// in-place variant
+				// in-place variant.
 				refInPlace := make([]byte, n)
 				copy(refInPlace, plain)
+
 				refOrIP, err := ref.NewCTR(c.blk(), c.iv)
 				if err != nil {
 					t.Fatalf("oracle NewCTR in-place: %v", err)
 				}
+
 				refOrIP.XORKeyStream(refInPlace, refInPlace)
 
 				myInPlace := make([]byte, n)
@@ -329,6 +350,7 @@ func TestDiff_PlainCTR_vs_Oracle(t *testing.T) {
 				if !bytes.Equal(refInPlace, myInPlace) {
 					t.Fatalf("%s plain CTR in-place len=%d divergence:\n ref %x\n new %x", c.name, n, refInPlace, myInPlace)
 				}
+
 				if !bytes.Equal(refOut, refInPlace) {
 					t.Fatalf("%s plain CTR oracle in-place != out-of-place len=%d", c.name, n)
 				}

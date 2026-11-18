@@ -24,9 +24,11 @@ func GenerateEphemeralKey(curve *Curve, rnd io.Reader) (privRaw, pubRaw []byte, 
 	if err != nil {
 		return nil, nil, fmt.Errorf("gost.GenerateEphemeralKey: %w", err)
 	}
+
 	pub, err := prv.PublicKey()
 	if err != nil {
 		return nil, nil, fmt.Errorf("gost.GenerateEphemeralKey: PublicKey: %w", err)
 	}
+
 	return prv.Raw(), pub.Raw(), nil
 }

@@ -35,7 +35,8 @@ func TestDiffAgainstInternalGost(t *testing.T) {
 		msg := make([]byte, n)
 		rng.Read(msg)
 
-		want := gost.GOSTR341194(msg) // black-box oracle
+		want := gost.GOSTR341194(msg) // black-box oracle.
+
 		got := Sum(msg)
 		if !bytes.Equal(got[:], want) {
 			t.Fatalf("len=%d mismatch:\n clean-room %x\n gostcryptocompat %x", n, got[:], want)
@@ -72,7 +73,7 @@ func FuzzDiffAgainstInternalGost(f *testing.F) {
 			t.Skip("empty input is the documented D1 gogost/engine divergence")
 		}
 
-		want := gost.GOSTR341194(msg) // black-box oracle (one-shot)
+		want := gost.GOSTR341194(msg) // black-box oracle (one-shot).
 
 		// One-shot clean-room.
 		got := Sum(msg)
@@ -85,16 +86,19 @@ func FuzzDiffAgainstInternalGost(f *testing.F) {
 		n := len(msg)
 		off1 := int(split % uint(n+1))
 		remaining := n - off1
+
 		var off2 int
 		if remaining == 0 {
 			off2 = off1
 		} else {
 			off2 = off1 + int(split2%uint(remaining+1))
 		}
+
 		h := New()
 		h.Write(msg[:off1])
 		h.Write(msg[off1:off2])
 		h.Write(msg[off2:])
+
 		gotStream := h.Sum(nil)
 		if !bytes.Equal(gotStream, want) {
 			t.Fatalf("streaming len=%d (off1=%d off2=%d) mismatch:\n clean-room %x\n gostcryptocompat %x", n, off1, off2, gotStream, want)
@@ -112,13 +116,17 @@ func TestDiffStreaming(t *testing.T) {
 		rng.Read(msg)
 
 		h := New()
+
 		for off := 0; off < len(msg); {
 			chunk := 1 + rng.Intn(40)
 			end := min(off+chunk, len(msg))
 			h.Write(msg[off:end])
+
 			off = end
 		}
+
 		got := h.Sum(nil)
+
 		want := gost.GOSTR341194(msg)
 		if !bytes.Equal(got, want) {
 			t.Fatalf("streaming len=%d mismatch:\n clean-room %x\n gostcryptocompat %x", n, got, want)
@@ -132,7 +140,7 @@ func TestDiffStreaming(t *testing.T) {
 // forgetting nbuf or sum in a future per-field clear).
 func TestDiffReset(t *testing.T) {
 	rng := rand.New(rand.NewSource(0x4E5E7))
-	oracle := gost.NewGOSTR341194CryptoProHash() // gogost-backed hash.Hash
+	oracle := gost.NewGOSTR341194CryptoProHash() // gogost-backed hash.Hash.
 
 	for range 50 {
 		// First message — non-empty to stay outside the D1 divergence.
@@ -150,12 +158,14 @@ func TestDiffReset(t *testing.T) {
 		h.Write(msg1)
 		h.Reset()
 		h.Write(msg2)
+
 		gotAfterReset := h.Sum(nil)
 
 		// Oracle: same sequence.
 		oracle.Write(msg1)
 		oracle.Reset()
 		oracle.Write(msg2)
+
 		wantAfterReset := oracle.Sum(nil)
 		oracle.Reset()
 
@@ -185,30 +195,36 @@ func TestSumNonDestructive(t *testing.T) {
 		rng.Read(msg)
 
 		// Choose a split point to call Sum mid-stream.
-		split := rng.Intn(n + 1) // 0..n inclusive
+		split := rng.Intn(n + 1) // 0..n inclusive.
 
 		// Clean-room: write first half, take intermediate Sum, write second half, take final Sum.
 		h := New()
 		h.Write(msg[:split])
-		midSum := h.Sum(nil) // must not destroy state
+
+		midSum := h.Sum(nil) // must not destroy state.
 		h.Write(msg[split:])
+
 		finalSum := h.Sum(nil)
 
 		// Oracle: same Write→Sum→Write→Sum sequence.
 		og := gost.NewGOSTR341194CryptoProHash()
 		og.Write(msg[:split])
+
 		ogMid := og.Sum(nil)
 		og.Write(msg[split:])
+
 		ogFinal := og.Sum(nil)
 
 		// Mid-stream digests must match each other.
 		if !bytes.Equal(midSum, ogMid) {
 			t.Fatalf("mid-stream split=%d len=%d mismatch:\n clean-room %x\n oracle     %x", split, n, midSum, ogMid)
 		}
+
 		// Final digests must match each other.
 		if !bytes.Equal(finalSum, ogFinal) {
 			t.Fatalf("post-mid-Sum final split=%d len=%d mismatch:\n clean-room %x\n oracle     %x", split, n, finalSum, ogFinal)
 		}
+
 		// Final digest must equal the one-shot oracle over the full message.
 		wantFull := gost.GOSTR341194(msg)
 		if !bytes.Equal(finalSum, wantFull) {
@@ -234,21 +250,25 @@ func TestSumAppendPrefix(t *testing.T) {
 		// Clean-room.
 		h := New()
 		h.Write(msg)
+
 		gotWithPrefix := h.Sum(prefix)
 
 		// Oracle.
 		og := gost.NewGOSTR341194CryptoProHash()
 		og.Write(msg)
+
 		wantWithPrefix := og.Sum(prefix)
 
 		// The appended results must be identical.
 		if !bytes.Equal(gotWithPrefix, wantWithPrefix) {
 			t.Fatalf("Sum(prefix) mismatch len=%d:\n clean-room %x\n oracle     %x", n, gotWithPrefix, wantWithPrefix)
 		}
+
 		// The prefix bytes must be preserved at the start.
 		if !bytes.Equal(gotWithPrefix[:len(prefix)], prefix) {
 			t.Fatalf("Sum(prefix) dropped prefix len=%d: got %x", n, gotWithPrefix[:len(prefix)])
 		}
+
 		// The appended suffix must match the one-shot oracle digest.
 		wantDigest := gost.GOSTR341194(msg)
 		if !bytes.Equal(gotWithPrefix[len(prefix):], wantDigest) {

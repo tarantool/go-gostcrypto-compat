@@ -3,9 +3,10 @@ package magmaparity
 import (
 	"bytes"
 	"encoding/hex"
-	. "github.com/tarantool/go-gostcrypto/magma"
 	"math/rand"
 	"testing"
+
+	. "github.com/tarantool/go-gostcrypto/magma"
 
 	gostref "github.com/tarantool/go-gostcrypto-compat"
 	gost341264ref "go.stargrave.org/gogost/v7/gost341264"
@@ -218,6 +219,7 @@ func mustHex(s string) []byte {
 	if err != nil {
 		panic(err)
 	}
+
 	return b
 }
 
@@ -226,11 +228,13 @@ func seedHex(s string) []byte {
 	if err != nil {
 		panic(err)
 	}
+
 	return b
 }
 
 func fixLen(b []byte, n int) []byte {
 	out := make([]byte, n)
 	copy(out, b)
+
 	return out
 }

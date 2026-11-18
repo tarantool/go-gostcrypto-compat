@@ -9,5 +9,6 @@ const keySize = 32
 func fixLen(b []byte, n int) []byte {
 	out := make([]byte, n)
 	copy(out, b)
+
 	return out
 }

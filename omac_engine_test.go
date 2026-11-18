@@ -19,13 +19,18 @@ func TestOMAC_Kuznyechik_EngineOracle(t *testing.T) {
 	for i := range key {
 		key[i] = 0xAA
 	}
+
 	block := gost3412128.NewCipher(key)
+
 	omac, err := NewOMAC(block, 16)
 	if err != nil {
 		t.Fatalf("NewOMAC: %v", err)
 	}
+
 	omac.Write([]byte("hello"))
+
 	got := omac.Sum(nil)
+
 	want := "96e6c1913fd788e3922e617fdd341edf"
 	if strings.ToLower(hex.EncodeToString(got)) != want {
 		t.Errorf("OMAC(key=0xAAx32, plain='hello')\n got: %s\nwant: %s",

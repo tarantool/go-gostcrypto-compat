@@ -26,9 +26,11 @@ var allOIDs = []struct {
 
 func mustCurve(t *testing.T, oid string) *Curve {
 	t.Helper()
+
 	c, err := CurveByOID(oid)
 	if err != nil {
 		t.Fatalf("CurveByOID(%s): %v", oid, err)
 	}
+
 	return c
 }

@@ -30,8 +30,9 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"encoding/hex"
-	. "github.com/tarantool/go-gostcrypto/kdftree"
 	"testing"
+
+	. "github.com/tarantool/go-gostcrypto/kdftree"
 
 	gostref "github.com/tarantool/go-gostcrypto-compat"
 	"go.stargrave.org/gogost/v7/gost34112012256"
@@ -39,10 +40,12 @@ import (
 
 func mustHexG(t *testing.T, s string) []byte {
 	t.Helper()
+
 	b, err := hex.DecodeString(s)
 	if err != nil {
 		t.Fatalf("bad hex %q: %v", s, err)
 	}
+
 	return b
 }
 
@@ -58,6 +61,7 @@ func oracleHMAC(key, counter, label, seed, lRepr []byte) []byte {
 	h.Write([]byte{0x00})
 	h.Write(seed)
 	h.Write(lRepr)
+
 	return h.Sum(nil)
 }
 
@@ -70,7 +74,7 @@ func TestKDFTree256Conformance(t *testing.T) {
 		label     []byte
 		seed      []byte
 		keyOutLen int
-		want      string // "" => no pinned etalon, cross-check refs only
+		want      string // "" => no pinned etalon, cross-check refs only.
 	}{
 		{
 			// RFC 7836 Appendix B example 10 (gostcrypto/kdftree/rfc/rfc7836.txt
@@ -78,7 +82,7 @@ func TestKDFTree256Conformance(t *testing.T) {
 			// Independently confirmed by gost-engine tmp/engine/test_keyexpimp.c:78-97
 			// (KAT-1 in gostcrypto/kdftree/kdftree_test.go:TestKDFTree256_KAT1_64B).
 			// K1 = 22b6837845c6bef65ea71672b265831086d3c76aebe6dae91cad51d83f79d16b
-			// K2 = 074c9330599d7f8d712fca54392f4ddde93751206b3584c8f43f9e6dc51531f9
+			// K2 = 074c9330599d7f8d712fca54392f4ddde93751206b3584c8f43f9e6dc51531f9.
 			name:      "KAT-1/64B",
 			label:     mustHexG(t, "26BDB878"),
 			seed:      mustHexG(t, "AF21434145656378"),
@@ -109,16 +113,19 @@ func TestKDFTree256Conformance(t *testing.T) {
 			if len(got) != tc.keyOutLen {
 				t.Fatalf("len = %d, want %d", len(got), tc.keyOutLen)
 			}
+
 			// Reference 1: in-repo corrected iterator.
 			if ref := gostref.KDFTree2012_256(key, tc.label, tc.seed, tc.keyOutLen); !bytes.Equal(got, ref) {
 				t.Fatalf("mismatch vs gostcryptocompat:\n got %x\n ref %x", got, ref)
 			}
+
 			// Reference 2: pinned authoritative etalon (RFC 7836 Appendix B).
 			if tc.want != "" {
 				if want := mustHexG(t, tc.want); !bytes.Equal(got, want) {
 					t.Fatalf("mismatch vs pinned vector:\n got  %x\n want %x", got, want)
 				}
 			}
+
 			// Reference 3: raw gogost — ONLY valid for the 32-byte single-block case (D1).
 			if tc.keyOutLen == 32 {
 				ref := gost34112012256.NewKDF(key).Derive(nil, tc.label, tc.seed)
@@ -145,16 +152,19 @@ func TestKDFTree256_CounterWidth_Parity(t *testing.T) {
 	lRepr64 := []byte{0x02, 0x00}
 
 	for r := 2; r <= 4; r++ {
-		r := r
 		t.Run(map[int]string{2: "r=2", 3: "r=3", 4: "r=4"}[r], func(t *testing.T) {
 			got := KDFTree256(key, label, seed, r, 64)
 			if len(got) != 64 {
 				t.Fatalf("len = %d, want 64", len(got))
 			}
+
 			// Build counter bytes [i]_b: low r bytes of i, big-endian.
 			counter1 := make([]byte, r)
+
 			counter1[r-1] = 0x01
+
 			counter2 := make([]byte, r)
+
 			counter2[r-1] = 0x02
 
 			k1 := oracleHMAC(key, counter1, label, seed, lRepr64)
@@ -205,12 +215,12 @@ func TestKDFTree256_Truncation_Parity(t *testing.T) {
 
 	cases := []struct {
 		outLen  int
-		lRepr   []byte // [L]_b = encodeMinBE(outLen*8)
+		lRepr   []byte // [L]_b = encodeMinBE(outLen*8).
 		nBlocks int
 	}{
-		{40, []byte{0x01, 0x40}, 2}, // 40*8=320=0x140 (2 bytes)
-		{48, []byte{0x01, 0x80}, 2}, // 48*8=384=0x180 (2 bytes)
-		{16, []byte{0x80}, 1},       // 16*8=128=0x80  (1 byte)
+		{40, []byte{0x01, 0x40}, 2}, // 40*8=320=0x140 (2 bytes).
+		{48, []byte{0x01, 0x80}, 2}, // 48*8=384=0x180 (2 bytes).
+		{16, []byte{0x80}, 1},       // 16*8=128=0x80  (1 byte).
 	}
 
 	for _, tc := range cases {
@@ -219,12 +229,16 @@ func TestKDFTree256_Truncation_Parity(t *testing.T) {
 			if len(got) != tc.outLen {
 				t.Fatalf("len = %d, want %d", len(got), tc.outLen)
 			}
+
 			// Build expected from oracleHMAC blocks, then truncate.
 			var want []byte
+
 			for i := 1; i <= tc.nBlocks; i++ {
 				counter := []byte{byte(i)}
+
 				want = append(want, oracleHMAC(key, counter, label, seed, tc.lRepr)...)
 			}
+
 			want = want[:tc.outLen]
 
 			if !bytes.Equal(got, want) {

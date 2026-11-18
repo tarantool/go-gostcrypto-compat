@@ -43,6 +43,7 @@ func TestKEG2012_256_RoundTrip(t *testing.T) {
 	for i := range seedA {
 		seedA[i] = byte(0x11 + i)
 	}
+
 	seedB := make([]byte, 32)
 	for i := range seedB {
 		seedB[i] = byte(0x55 + i)
@@ -52,6 +53,7 @@ func TestKEG2012_256_RoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("keygen A: %v", err)
 	}
+
 	privBRaw, pubBRaw, err := GenerateEphemeralKey(curve, bytes.NewReader(seedB))
 	if err != nil {
 		t.Fatalf("keygen B: %v", err)
@@ -67,6 +69,7 @@ func TestKEG2012_256_RoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("KEG(A→B): %v", err)
 	}
+
 	resultBA, err := KEG2012_256(curve, pubARaw, privBRaw, ukmSource)
 	if err != nil {
 		t.Fatalf("KEG(B→A): %v", err)
@@ -131,12 +134,15 @@ func TestKEG2012_256_EngineOracle(t *testing.T) {
 	if _, err := gost3410.NewPrivateKey(curve.inner, privARaw); err != nil {
 		t.Fatalf("privARaw invalid: %v", err)
 	}
+
 	if _, err := gost3410.NewPublicKey(curve.inner, pubARaw); err != nil {
 		t.Fatalf("pubARaw invalid: %v", err)
 	}
+
 	if _, err := gost3410.NewPrivateKey(curve.inner, privBRaw); err != nil {
 		t.Fatalf("privBRaw invalid: %v", err)
 	}
+
 	if _, err := gost3410.NewPublicKey(curve.inner, pubBRaw); err != nil {
 		t.Fatalf("pubBRaw invalid: %v", err)
 	}

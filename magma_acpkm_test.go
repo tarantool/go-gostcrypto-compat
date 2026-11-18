@@ -10,10 +10,12 @@ import (
 
 func mustHexMagmaMesh(t *testing.T, s string) []byte {
 	t.Helper()
+
 	b, err := hex.DecodeString(s)
 	if err != nil {
 		t.Fatalf("hex.DecodeString(%q): %v", s, err)
 	}
+
 	return b
 }
 
@@ -26,10 +28,12 @@ var acpkmDTest = [32]byte{
 
 func magmaACPKMMesh(key []byte) []byte {
 	block := gost341264.NewCipher(key)
+
 	out := make([]byte, 32)
 	for i := 0; i < 32; i += block.BlockSize() {
 		block.Encrypt(out[i:i+block.BlockSize()], acpkmDTest[i:i+block.BlockSize()])
 	}
+
 	return out
 }
 
@@ -48,13 +52,16 @@ func TestMagmaACPKM_KeyMeshing_EngineEtalon(t *testing.T) {
 	}
 
 	k3 := magmaACPKMMesh(gotK2)
+
 	k4 := magmaACPKMMesh(k3)
 	if bytes.Equal(k3, gotK2) {
 		t.Fatal("K3 unexpectedly equals K2")
 	}
+
 	if bytes.Equal(k4, k3) {
 		t.Fatal("K4 unexpectedly equals K3")
 	}
+
 	if len(k4) != 32 {
 		t.Fatalf("K4 len=%d, want 32", len(k4))
 	}

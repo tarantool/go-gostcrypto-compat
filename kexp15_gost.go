@@ -69,23 +69,27 @@ func Kexp15(variant KexpVariant, sharedKey, cipherKey, macKey, iv []byte) ([]byt
 	if len(sharedKey) == 0 {
 		return nil, fmt.Errorf("gost.Kexp15: sharedKey must not be empty")
 	}
+
 	if len(cipherKey) != 32 {
 		return nil, fmt.Errorf("gost.Kexp15: cipherKey must be 32 bytes, got %d", len(cipherKey))
 	}
+
 	if len(macKey) != 32 {
 		return nil, fmt.Errorf("gost.Kexp15: macKey must be 32 bytes, got %d", len(macKey))
 	}
+
 	if len(iv) != p.ivLen {
 		return nil, fmt.Errorf("gost.Kexp15: iv must be %d bytes, got %d", p.ivLen, len(iv))
 	}
 
 	// Step 1: iv_full — pad iv with zeros to full block size.
-	// (gost_keyexpimp.c:63-64: memset 0, memcpy iv)
+	// (gost_keyexpimp.c:63-64: memset 0, memcpy iv).
 	ivFull := make([]byte, p.blockSize)
 	copy(ivFull, iv)
 
 	// Instantiate the block cipher for the MAC and CTR layers.
 	var macBlock, ctrBlock cipher.Block
+
 	switch variant {
 	case KexpKuznyechik:
 		macBlock = gost3412128.NewCipher(macKey)
@@ -96,21 +100,24 @@ func Kexp15(variant KexpVariant, sharedKey, cipherKey, macKey, iv []byte) ([]byt
 	}
 
 	// Step 2: MAC = OMAC(mac_key, iv || sharedKey), truncated to macLen.
-	// (gost_keyexpimp.c:72-78: EVP_DigestUpdate iv then shared_key)
+	// (gost_keyexpimp.c:72-78: EVP_DigestUpdate iv then shared_key).
 	omac, err := NewOMAC(macBlock, p.macLen)
 	if err != nil {
 		return nil, fmt.Errorf("gost.Kexp15: NewOMAC: %w", err)
 	}
+
 	if _, err := omac.Write(iv); err != nil {
 		return nil, fmt.Errorf("gost.Kexp15: OMAC.Write(iv): %w", err)
 	}
+
 	if _, err := omac.Write(sharedKey); err != nil {
 		return nil, fmt.Errorf("gost.Kexp15: OMAC.Write(sharedKey): %w", err)
 	}
-	mac := omac.Sum(nil) // mac_len bytes
+
+	mac := omac.Sum(nil) // mac_len bytes.
 
 	// Step 3: CTR-encrypt (sharedKey || mac) with iv_full.
-	// (gost_keyexpimp.c:89-94: two EVP_CipherUpdate calls, sharedKey then mac_buf)
+	// (gost_keyexpimp.c:89-94: two EVP_CipherUpdate calls, sharedKey then mac_buf).
 	plaintext := make([]byte, len(sharedKey)+p.macLen)
 	copy(plaintext, sharedKey)
 	copy(plaintext[len(sharedKey):], mac)
@@ -119,6 +126,7 @@ func Kexp15(variant KexpVariant, sharedKey, cipherKey, macKey, iv []byte) ([]byt
 	if err != nil {
 		return nil, fmt.Errorf("gost.Kexp15: NewCTR: %w", err)
 	}
+
 	out := make([]byte, len(plaintext))
 	ctr.XORKeyStream(out, plaintext)
 

@@ -31,12 +31,14 @@ func TestGost_GOST28147_CNT_EngineVectors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("key decode: %v", err)
 	}
+
 	// iv = '0000000000000000' = 8 zero bytes
 	// src: tmp/engine/test/03-encrypt.t:141
 	iv, err := hex.DecodeString("0000000000000000")
 	if err != nil {
 		t.Fatalf("iv decode: %v", err)
 	}
+
 	// cleartext = "The quick brown fox jumps over the lazy dog\n"
 	// src: tmp/engine/test/03-encrypt.t:142
 	cleartext := []byte("The quick brown fox jumps over the lazy dog\n")
@@ -44,9 +46,9 @@ func TestGost_GOST28147_CNT_EngineVectors(t *testing.T) {
 	cases := []struct {
 		name       string
 		sbox       *gost28147.Sbox
-		ciphertext string // hex
+		ciphertext string // hex.
 		src        string // file:line in tmp/engine/
-		skip       string // non-empty → t.Skip
+		skip       string // non-empty → t.Skip.
 	}{
 		{
 			// crypt_test(-alg => 'gost89-cnt', -paramset => "1.2.643.2.2.31.1", ...)
@@ -90,12 +92,13 @@ func TestGost_GOST28147_CNT_EngineVectors(t *testing.T) {
 			if tc.skip != "" {
 				t.Skipf("%s (src: %s)", tc.skip, tc.src)
 			}
+
 			want, err := hex.DecodeString(tc.ciphertext)
 			if err != nil {
 				t.Skipf("malformed ciphertext hex (src: %s): %v", tc.src, err)
 			}
 
-			// Encrypt
+			// Encrypt.
 			c := gost28147.NewCipher(key, tc.sbox)
 			ctr := c.NewCTR(iv)
 			got := make([]byte, len(cleartext))
@@ -105,11 +108,12 @@ func TestGost_GOST28147_CNT_EngineVectors(t *testing.T) {
 				t.Fatalf("CNT encrypt mismatch (src: %s):\ngot  %x\nwant %s", tc.src, got, tc.ciphertext)
 			}
 
-			// Decrypt round-trip
+			// Decrypt round-trip.
 			c2 := gost28147.NewCipher(key, tc.sbox)
 			ctr2 := c2.NewCTR(iv)
 			plain := make([]byte, len(got))
 			ctr2.XORKeyStream(plain, got)
+
 			if !bytes.Equal(plain, cleartext) {
 				t.Fatalf("CNT decrypt round-trip failed (src: %s): got %q", tc.src, plain)
 			}
@@ -142,14 +146,15 @@ func TestGost_GOST28147_IMIT_EngineVectors(t *testing.T) {
 	// testbig.dat = ("12345670" x 8 + "\n") x 4096 (266240 bytes)
 	// src: tmp/engine/test/02-mac.t:47
 	testbig := []byte(strings.Repeat(strings.Repeat("12345670", 8)+"\n", 4096))
-	_ = testbig // used in skipped vector below
+
+	_ = testbig // used in skipped vector below.
 
 	cases := []struct {
 		name string
 		sbox *gost28147.Sbox
 		data []byte
-		size int    // MAC output bytes
-		want string // hex
+		size int    // MAC output bytes.
+		want string // hex.
 		src  string
 		skip string
 	}{
@@ -327,22 +332,26 @@ func TestGost_GOST28147_IMIT_EngineVectors(t *testing.T) {
 			if tc.skip != "" {
 				t.Skipf("%s (src: %s)", tc.skip, tc.src)
 			}
+
 			want, err := hex.DecodeString(tc.want)
 			if err != nil {
 				t.Skipf("malformed want hex (src: %s): %v", tc.src, err)
 			}
 
 			c := gost28147.NewCipher(key, tc.sbox)
-			iv := make([]byte, gost28147.BlockSize) // zero IV per RFC 9189 §4.2
+			iv := make([]byte, gost28147.BlockSize) // zero IV per RFC 9189 §4.2.
+
 			mac, err := c.NewMAC(tc.size, iv)
 			if err != nil {
 				t.Fatalf("NewMAC: %v", err)
 			}
+
 			if len(tc.data) > 0 {
 				if _, err := mac.Write(tc.data); err != nil {
 					t.Fatalf("Write: %v", err)
 				}
 			}
+
 			got := mac.Sum(nil)
 
 			if !bytes.Equal(got, want) {
@@ -365,10 +374,12 @@ func TestGost_GOST28147_IMIT_Wrapper_KeyMeshing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GOST28147_IMIT: %v", err)
 	}
+
 	want, err := hex.DecodeString("5efab81f")
 	if err != nil {
 		t.Fatalf("hex decode: %v", err)
 	}
+
 	if !bytes.Equal(got, want) {
 		t.Fatalf("IMIT with key meshing mismatch:\ngot  %x\nwant %x\n(src: test/02-mac.t:185)",
 			got, want)
@@ -388,10 +399,12 @@ func TestGost_GOST28147_IMIT_Wrapper_NoMeshing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GOST28147_IMIT: %v", err)
 	}
+
 	want, err := hex.DecodeString("2ee8d13d")
 	if err != nil {
 		t.Fatalf("hex decode: %v", err)
 	}
+
 	if !bytes.Equal(got, want) {
 		t.Fatalf("IMIT (no meshing) mismatch:\ngot  %x\nwant %x\n(src: test/02-mac.t:162)",
 			got, want)

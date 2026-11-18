@@ -29,6 +29,7 @@ func mustHex(s string) []byte {
 	if err != nil {
 		panic("mustHex: " + err.Error())
 	}
+
 	return b
 }
 
@@ -56,12 +57,15 @@ func TestCTR_Kuznyechik_KAT(t *testing.T) {
 		"cb91fab1f20cbab6d1c6d15820bdba73")
 
 	block := gost3412128.NewCipher(key)
+
 	ctr, err := NewCTR(block, iv)
 	if err != nil {
 		t.Fatalf("NewCTR: %v", err)
 	}
+
 	dst := make([]byte, len(plaintext))
 	ctr.XORKeyStream(dst, plaintext)
+
 	if !bytes.Equal(dst, expected) {
 		t.Errorf("Kuznyechik CTR KAT mismatch\n got:  %x\n want: %x", dst, expected)
 	}
@@ -70,6 +74,7 @@ func TestCTR_Kuznyechik_KAT(t *testing.T) {
 	ctr2, _ := NewCTR(gost3412128.NewCipher(key), iv)
 	recovered := make([]byte, len(expected))
 	ctr2.XORKeyStream(recovered, expected)
+
 	if !bytes.Equal(recovered, plaintext) {
 		t.Errorf("Kuznyechik CTR decrypt round-trip failed")
 	}
@@ -97,12 +102,15 @@ func TestCTR_Magma_KAT(t *testing.T) {
 		"136d868807b2dbef568eb680ab52a12d")
 
 	block := gost341264.NewCipher(key)
+
 	ctr, err := NewCTR(block, iv)
 	if err != nil {
 		t.Fatalf("NewCTR: %v", err)
 	}
+
 	dst := make([]byte, len(plaintext))
 	ctr.XORKeyStream(dst, plaintext)
+
 	if !bytes.Equal(dst, expected) {
 		t.Errorf("Magma CTR KAT mismatch\n got:  %x\n want: %x", dst, expected)
 	}
@@ -111,6 +119,7 @@ func TestCTR_Magma_KAT(t *testing.T) {
 	ctr2, _ := NewCTR(gost341264.NewCipher(key), iv)
 	recovered := make([]byte, len(expected))
 	ctr2.XORKeyStream(recovered, expected)
+
 	if !bytes.Equal(recovered, plaintext) {
 		t.Errorf("Magma CTR decrypt round-trip failed")
 	}
@@ -142,7 +151,7 @@ func TestCTR_CounterIncrement(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			key := mustHex(tc.key)
 			iv := mustHex(tc.iv)
-			bs := len(iv) // blockSize
+			bs := len(iv) // blockSize.
 
 			// Encrypt 2*blockSize zeros to get two gamma blocks.
 			src := make([]byte, 2*bs)
@@ -150,7 +159,7 @@ func TestCTR_CounterIncrement(t *testing.T) {
 			ctr, _ := NewCTR(tc.newCipher(key), iv)
 			ctr.XORKeyStream(dst, src)
 
-			gamma2 := dst[bs:] // gamma for counter = IV+1
+			gamma2 := dst[bs:] // gamma for counter = IV+1.
 
 			// Compute IV+1.
 			ivPlus1 := make([]byte, bs)
@@ -174,7 +183,7 @@ func TestCTR_CounterIncrement(t *testing.T) {
 // the block size.
 func TestCTR_ErrorOnBadIV(t *testing.T) {
 	key := mustHex("8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef")
-	block := gost3412128.NewCipher(key) // blockSize = 16
+	block := gost3412128.NewCipher(key) // blockSize = 16.
 
 	for _, badLen := range []int{0, 8, 15, 17, 32} {
 		_, err := NewCTR(block, make([]byte, badLen))
@@ -234,30 +243,38 @@ func TestCTRACPKM_Roundtrip(t *testing.T) {
 			for i := range key {
 				key[i] = byte(i + 1)
 			}
+
 			iv := make([]byte, tc.ivLen)
 			for i := range iv {
 				iv[i] = byte(i + 0x10)
 			}
+
 			// 3.5 sections of data — crosses the rekey boundary 3 times.
 			plain := make([]byte, tc.sectionSize*7/2)
 			for i := range plain {
 				plain[i] = byte(i * 31)
 			}
+
 			enc, err := NewCTRACPKM(tc.newBlock, key, iv, tc.sectionSize)
 			if err != nil {
 				t.Fatalf("NewCTRACPKM enc: %v", err)
 			}
+
 			ciphertext := make([]byte, len(plain))
 			enc.XORKeyStream(ciphertext, plain)
+
 			if bytes.Equal(ciphertext, plain) {
 				t.Fatal("ciphertext equals plaintext — cipher did nothing")
 			}
+
 			dec, err := NewCTRACPKM(tc.newBlock, key, iv, tc.sectionSize)
 			if err != nil {
 				t.Fatalf("NewCTRACPKM dec: %v", err)
 			}
+
 			got := make([]byte, len(ciphertext))
 			dec.XORKeyStream(got, ciphertext)
+
 			if !bytes.Equal(got, plain) {
 				t.Errorf("roundtrip mismatch at first diff")
 			}
@@ -272,10 +289,12 @@ func TestCTRACPKM_MatchesPlainCTR_WhenSectionZero(t *testing.T) {
 	for i := range key {
 		key[i] = byte(i)
 	}
+
 	iv := make([]byte, 16)
 	for i := range iv {
 		iv[i] = byte(0x80 + i)
 	}
+
 	plain := make([]byte, 8192)
 	for i := range plain {
 		plain[i] = byte(i)
@@ -285,6 +304,7 @@ func TestCTRACPKM_MatchesPlainCTR_WhenSectionZero(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewCTR: %v", err)
 	}
+
 	plainOut := make([]byte, len(plain))
 	plainCTR.XORKeyStream(plainOut, plain)
 
@@ -294,6 +314,7 @@ func TestCTRACPKM_MatchesPlainCTR_WhenSectionZero(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewCTRACPKM: %v", err)
 	}
+
 	acpkmOut := make([]byte, len(plain))
 	acpkmCTR.XORKeyStream(acpkmOut, plain)
 

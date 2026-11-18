@@ -13,10 +13,12 @@ import (
 
 func mustHexMGM(t *testing.T, s string) []byte {
 	t.Helper()
+
 	b, err := hex.DecodeString(s)
 	if err != nil {
 		t.Fatalf("hex.DecodeString(%q): %v", s, err)
 	}
+
 	return b
 }
 
@@ -92,26 +94,32 @@ func TestMGM_EngineVectors(t *testing.T) {
 			switch tc.name {
 			case "Kuznyechik":
 				b := gost3412128.NewCipher(tc.key)
+
 				block = b
 				aead, err = mgm.NewMGM(b, len(tc.wantTag))
 			case "Magma":
 				b := gost341264.NewCipher(tc.key)
+
 				block = b
 				aead, err = mgm.NewMGM(b, len(tc.wantTag))
 			}
+
 			if err != nil {
 				t.Fatalf("NewMGM: %v", err)
 			}
+
 			if len(tc.nonce) != block.BlockSize() {
 				t.Fatalf("nonce len=%d, blockSize=%d", len(tc.nonce), block.BlockSize())
 			}
 
 			got := aead.Seal(nil, tc.nonce, tc.plain, tc.aad)
 			gotCT := got[:len(tc.plain)]
+
 			gotTag := got[len(tc.plain):]
 			if !bytes.Equal(gotCT, tc.wantCT) {
 				t.Fatalf("ciphertext mismatch:\n got  %x\n want %x", gotCT, tc.wantCT)
 			}
+
 			if !bytes.Equal(gotTag, tc.wantTag) {
 				t.Fatalf("tag mismatch:\n got  %x\n want %x", gotTag, tc.wantTag)
 			}
@@ -120,6 +128,7 @@ func TestMGM_EngineVectors(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Open: %v", err)
 			}
+
 			if !bytes.Equal(plain, tc.plain) {
 				t.Fatalf("plaintext mismatch:\n got  %x\n want %x", plain, tc.plain)
 			}

@@ -37,14 +37,14 @@ type CTR struct {
 	block cipher.Block
 	// iv is the live counter — mutated in-place after each block encrypt.
 	iv  []byte
-	buf []byte // current gamma block (blockSize bytes), filled on demand
-	num int    // bytes consumed from buf (0 means buf is exhausted)
+	buf []byte // current gamma block (blockSize bytes), filled on demand.
+	num int    // bytes consumed from buf (0 means buf is exhausted).
 
 	// ACPKM fields — populated only via NewCTRACPKM. Zero values disable
 	// intra-record rekeying; the CTR then behaves as plain GOST-CTR.
-	newBlock    func([]byte) cipher.Block // rebuild block with a fresh 32-byte key
-	sectionSize int                       // bytes produced per key (0 = no ACPKM)
-	sinceRekey  int                       // keystream bytes produced since last rekey
+	newBlock    func([]byte) cipher.Block // rebuild block with a fresh 32-byte key.
+	sectionSize int                       // bytes produced per key (0 = no ACPKM).
+	sinceRekey  int                       // keystream bytes produced since last rekey.
 }
 
 // NewCTR creates a new CTR stream cipher over block with the given iv.
@@ -54,13 +54,15 @@ func NewCTR(block cipher.Block, iv []byte) (*CTR, error) {
 	if len(iv) != bs {
 		return nil, fmt.Errorf("gost/ctr: iv length %d does not match block size %d", len(iv), bs)
 	}
+
 	liveCtr := make([]byte, bs)
 	copy(liveCtr, iv)
+
 	return &CTR{
 		block: block,
 		iv:    liveCtr,
 		buf:   make([]byte, bs),
-		num:   0, // 0 == buf exhausted; generate on first call
+		num:   0, // 0 == buf exhausted; generate on first call.
 	}, nil
 }
 
@@ -87,19 +89,25 @@ func NewCTRACPKM(
 	if len(key) != 32 {
 		return nil, fmt.Errorf("gost/ctr: ACPKM key length %d, want 32", len(key))
 	}
+
 	block := newBlock(key)
+
 	bs := block.BlockSize()
 	if len(iv) != bs {
 		return nil, fmt.Errorf("gost/ctr: iv length %d does not match block size %d", len(iv), bs)
 	}
+
 	if sectionSize < 0 {
 		return nil, fmt.Errorf("gost/ctr: negative sectionSize %d", sectionSize)
 	}
+
 	if sectionSize != 0 && sectionSize%bs != 0 {
 		return nil, fmt.Errorf("gost/ctr: sectionSize %d not a multiple of block size %d", sectionSize, bs)
 	}
+
 	liveCtr := make([]byte, bs)
 	copy(liveCtr, iv)
+
 	return &CTR{
 		block:       block,
 		iv:          liveCtr,
@@ -116,10 +124,12 @@ func NewCTRACPKM(
 // keyed on those 32 bytes. Counter IV is untouched.
 func (c *CTR) rekeyACPKM() {
 	bs := c.block.BlockSize()
+
 	var newKey [32]byte
 	for i := 0; i < 32; i += bs {
 		c.block.Encrypt(newKey[i:i+bs], acpkmD[i:i+bs])
 	}
+
 	c.block = c.newBlock(newKey[:])
 }
 
@@ -130,6 +140,7 @@ func (c *CTR) XORKeyStream(dst, src []byte) {
 	if len(dst) < len(src) {
 		panic("gost/ctr: dst is shorter than src")
 	}
+
 	bs := c.block.BlockSize()
 	for i, b := range src {
 		if c.num == 0 {
@@ -141,15 +152,20 @@ func (c *CTR) XORKeyStream(dst, src []byte) {
 			// is always a multiple of blockSize.
 			if c.sectionSize > 0 && c.sinceRekey >= c.sectionSize {
 				c.rekeyACPKM()
+
 				c.sinceRekey = 0
 			}
+
 			// Generate next gamma block: encrypt the counter.
 			c.block.Encrypt(c.buf, c.iv)
 			// Increment the counter big-endian (last byte first, carry upward).
 			incCounter(c.iv)
+
 			c.sinceRekey += bs
 		}
+
 		dst[i] = b ^ c.buf[c.num]
+
 		c.num++
 		if c.num == bs {
 			c.num = 0

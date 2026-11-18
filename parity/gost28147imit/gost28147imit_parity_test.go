@@ -36,6 +36,7 @@ func seedHex(s string) []byte {
 	if err != nil {
 		panic(err)
 	}
+
 	return b
 }
 
@@ -93,6 +94,7 @@ func TestDiff_InternalGostOracle(t *testing.T) {
 	for n := 1; n <= 16; n++ {
 		lengths = append(lengths, n)
 	}
+
 	lengths = append(lengths,
 		17, 31, 32, 100, 255, 256, 1016, 1017, 1023, 1024, 1025, 1031,
 		1032, 2048, 2049, 3072, 4097, 8192, 12345,
@@ -107,10 +109,12 @@ func TestDiff_InternalGostOracle(t *testing.T) {
 			rng.Read(msg)
 
 			got := IMIT(key, msg)
+
 			ref, err := refgost.GOST28147_IMIT(key, msg)
 			if err != nil {
 				t.Fatalf("oracle GOST28147_IMIT(len=%d): %v", n, err)
 			}
+
 			if !bytes.Equal(got, ref) {
 				t.Fatalf("mismatch key=%x len=%d: clean-room %x != oracle %x",
 					key, n, got, ref)
@@ -145,12 +149,14 @@ func TestDiff_SeqMACBlock(t *testing.T) {
 	}
 
 	const iterations = 200
+
 	for _, sc := range sboxCases {
 		t.Run(sc.name, func(t *testing.T) {
 			for i := range iterations {
 				key := make([]byte, keySize)
 				rng.Read(key)
-				block := make([]byte, 8) // gost28147.BlockSize
+
+				block := make([]byte, 8) // gost28147.BlockSize.
 				rng.Read(block)
 
 				got := SeqMACBlock(key, sc.cleanSBox, block)
@@ -159,6 +165,7 @@ func TestDiff_SeqMACBlock(t *testing.T) {
 				if len(got) != 8 {
 					t.Fatalf("%s: SeqMACBlock returned %d bytes, want 8", sc.name, len(got))
 				}
+
 				if !bytes.Equal(got, ref) {
 					t.Fatalf("%s: SeqMACBlock mismatch iter=%d key=%x block=%x:\n  clean-room %x\n  oracle     %x",
 						sc.name, i, key, block, got, ref)
@@ -172,25 +179,28 @@ func TestDiff_SeqMACBlock(t *testing.T) {
 // It diffs the clean-room SeqMACBlock against the oracle for a fuzzer-chosen
 // key, block, and S-box selector, asserting full 8-byte equality.
 func FuzzDiff_SeqMACBlock(f *testing.F) {
-	// Seed: CryptoPro-A (sboxSel even → 0)
+	// Seed: CryptoPro-A (sboxSel even → 0).
 	f.Add(
 		seedHex("8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef"),
 		seedHex("1122334455667700"),
-		byte(0), // CryptoPro-A
+		byte(0), // CryptoPro-A.
 	)
-	// Seed: tc26-Z (sboxSel odd → 1)
+	// Seed: tc26-Z (sboxSel odd → 1).
 	f.Add(
 		seedHex("ffeeddccbbaa99887766554433221100f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff"),
 		seedHex("92def06b3c130a59"),
-		byte(1), // tc26-Z
+		byte(1), // tc26-Z.
 	)
 
 	f.Fuzz(func(t *testing.T, rndKey, rndBlock []byte, sboxSel byte) {
 		key := fixLen(rndKey, keySize)
 		block := fixLen(rndBlock, 8)
 
-		var cleanSBox gost28147.SBox
-		var oracleSBox *refgost.Sbox
+		var (
+			cleanSBox  gost28147.SBox
+			oracleSBox *refgost.Sbox
+		)
+
 		if sboxSel%2 == 0 {
 			cleanSBox = gost28147.SboxCryptoProA
 			oracleSBox = refgost.SboxCryptoProA
@@ -241,6 +251,7 @@ func FuzzDiff_InternalGostOracle(f *testing.F) {
 			// panics and the oracle errors. The Test func only uses lengths >= 1.
 			t.Skip("empty message is undefined for GOST 28147-89 IMIT")
 		}
+
 		key := fixLen(rndKey, keySize)
 
 		ref, err := refgost.GOST28147_IMIT(key, msg)
@@ -251,6 +262,7 @@ func FuzzDiff_InternalGostOracle(f *testing.F) {
 			// rather than silently skipping the comparison.
 			t.Fatalf("oracle GOST28147_IMIT(len=%d): %v", len(msg), err)
 		}
+
 		got := IMIT(key, msg)
 		if !bytes.Equal(got, ref) {
 			t.Fatalf("mismatch key=%x len=%d: clean-room %x != oracle %x",
