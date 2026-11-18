@@ -9,7 +9,9 @@ Source: `tmp/engine/` (tag v3.0.3, commit e0a500a). Not committed to this repo.
 - `vectors` is the tag the vectors in this file were ported from. They are
   constants in the test files, so a new engine release does not change them.
   The entry moves only in the commit that re-ports them (see below).
-- `latest` is the newest gost-engine release.
+- `latest` is the newest gost-engine release. `bump-gost-engine.yml` checks
+  for a new one daily, runs the parity suite against it, and if that passes
+  opens a pull request that moves this entry.
 
 `.github/workflows/parity-engine.yml` builds the engine at each of these
 tags (once, if both name the same tag) and runs `go test ./...` with it. Only

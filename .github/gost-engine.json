@@ -1,5 +1,5 @@
 {
-  "$comment": "gost-engine tags for the live-engine CI, see docs/engine-vectors.md. vectors: the source of the ported vectors, moves only with a re-port. latest: the newest release.",
+  "$comment": "gost-engine tags for the live-engine CI, see docs/engine-vectors.md. vectors: the source of the ported vectors, moves only with a re-port. latest: the newest release, bumped by bump-gost-engine.yml.",
   "vectors": "v3.0.3",
   "latest": "v3.0.5"
 }

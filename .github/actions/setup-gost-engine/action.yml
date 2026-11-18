@@ -8,10 +8,10 @@ description: >-
   silently self-skip.
 
   Lives in go-gostcrypto-compat, next to the test that needs the engine. Its
-  caller is the reusable .github/workflows/parity-engine.yml, which
-  go-gostcrypto's parity workflow and this repo's engine workflow call. It
-  checks go-gostcrypto-compat out at the requested ref as ./gostcrypto-compat
-  and takes the action from there by local path:
+  callers are the reusable .github/workflows/parity-engine.yml, which
+  go-gostcrypto's parity workflow and this repo's engine workflow call, and
+  .github/workflows/bump-gost-engine.yml. They check go-gostcrypto-compat out
+  as ./gostcrypto-compat and take the action from there by local path:
     - uses: ./gostcrypto-compat/.github/actions/setup-gost-engine
 
 inputs:
