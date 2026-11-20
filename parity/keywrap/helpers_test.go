@@ -48,5 +48,9 @@ const (
 	//	keyWrapCryptoPro(&ctx, kek, ukm, sessionKey, wrapped);
 	// on hex-decoded katKEK/katUKM/katSession. The same harness reproduces
 	// katWrapped byte-for-byte with Gost28147_TC26ParamSetZ, confirming it.
+	//
+	// gost89.c, gost89.h, gost_keywrap.c and gost_keywrap.h are byte-identical
+	// in gost-engine 3.0.5, so both legs stand for 3.0.5 as well (see
+	// docs/engine-vectors.md, KWP-01/02).
 	katWrappedCryptoProA = "01020304050607083ca0a6a7e806437aef9c45e89774cd74ea922434c8c02aabf39d9878551c263e7103a2d4"
 )

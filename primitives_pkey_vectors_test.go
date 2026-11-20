@@ -1,12 +1,14 @@
 package gostcryptocompat_test
 
-// Sign/verify and VKO vectors from gost-engine v3.0.3 test/04-pkey.t.
-// Source commit: e0a500a (tag v3.0.3). Not committed; lives in tmp/engine/.
+// Sign/verify and VKO vectors from gost-engine v3.0.5 test/04-pkey.t.
+// Source commit: 09fdd53 (tag v3.0.5). Not committed; lives in tmp/engine/.
 //
 // Porting status:
 //   test/04-pkey.t 'keys' subtest    — PEM key print/parse tests; no raw KATs; skipped.
 //   test/04-pkey.t 'derive' subtest  — VKO derivation verified only via sha256(DER pubkey),
 //                                      not via raw shared-key bytes; all skipped.
+//                                      The ECDHE column added in v3.0.5 (provider mode,
+//                                      X coordinate only, no UKM) is skipped likewise.
 //
 // Portable vectors used here come from GOST R 34.10-2001 (RFC 7091 §A.1) and
 // GOST R 34.10-2012 (RFC 7091 §A.2), which the engine also passes.
@@ -28,27 +30,27 @@ import (
 // curve. We therefore call the underlying gost3410 primitives directly instead of
 // our wrapper so the test can use the correct curve for this vector.
 //
-// src: tmp/engine/test/04-pkey.t:45-141 (key print tests only; no raw sign KAT)
+// src: tmp/engine/test/04-pkey.t:50-146 (key print tests only; no raw sign KAT)
 // KAT from RFC 7091 §A.1 — same underlying algorithm.
 func TestGost_R342001_EngineVectors(t *testing.T) {
 	t.Parallel()
 
-	t.Skip("tmp/engine/test/04-pkey.t:45 — engine pkey tests use PEM key-file loading and " +
+	t.Skip("tmp/engine/test/04-pkey.t:50 — engine pkey tests use PEM key-file loading and " +
 		"text-output matching; no raw sign/verify KAT extractable without running OpenSSL. " +
 		"RFC 7091 §A.1 vectors already covered in primitives_test.go TestGost_R341012_Verify. " +
-		"(src: test/04-pkey.t:45)")
+		"(src: test/04-pkey.t:50)")
 }
 
 // TestGost_R341012_EngineVectors_Sign512 notes that GOST R 34.10-2012 512-bit
 // sign/verify is not exposed by our wrappers (R341012Sign/Verify only expose
 // the 256-bit path). Out of scope per task design.
 //
-// src: tmp/engine/test/04-pkey.t:265-317 (512-bit paramsets in derive subtest)
+// src: tmp/engine/test/04-pkey.t:274-331 (512-bit paramsets in derive subtest)
 func TestGost_R341012_EngineVectors_Sign512(t *testing.T) {
 	t.Parallel()
 
-	t.Skip("tmp/engine/test/04-pkey.t:265 — R 34.10-2012-512 sign/verify out of scope; " +
-		"our wrapper only exposes 256-bit sign (R341012Sign/Verify). (src: test/04-pkey.t:265)")
+	t.Skip("tmp/engine/test/04-pkey.t:274 — R 34.10-2012-512 sign/verify out of scope; " +
+		"our wrapper only exposes 256-bit sign (R341012Sign/Verify). (src: test/04-pkey.t:274)")
 }
 
 // TestGost_VKO2001_EngineVectors notes that the 04-pkey.t 'derive' subtest
@@ -60,13 +62,13 @@ func TestGost_R341012_EngineVectors_Sign512(t *testing.T) {
 // id-GostR3410-2001-CryptoPro-A paramset is covered by the gogost upstream test
 // already referenced in primitives_test.go TestGost_VKO2012_Agreement.
 //
-// src: tmp/engine/test/04-pkey.t:160-358
+// src: tmp/engine/test/04-pkey.t:165-378
 func TestGost_VKO2001_EngineVectors(t *testing.T) {
 	t.Parallel()
 
-	t.Skip("tmp/engine/test/04-pkey.t:160 — VKO 'derive' subtest verifies via sha256(DER pubkey), " +
+	t.Skip("tmp/engine/test/04-pkey.t:165 — VKO 'derive' subtest verifies via sha256(DER pubkey), " +
 		"not raw shared key bytes; PEM keys require DER parsing to extract LE raw privkey for " +
-		"our VKO2001 wrapper. No clean portable KAT available. (src: test/04-pkey.t:160)")
+		"our VKO2001 wrapper. No clean portable KAT available. (src: test/04-pkey.t:165)")
 }
 
 // TestGost_VKO2001_TestParamSet_RFC verifies VKO GOST R 34.10-2001 using the
@@ -74,7 +76,7 @@ func TestGost_VKO2001_EngineVectors(t *testing.T) {
 // by gost-engine's derive test (first entry in the %derives hash).
 //
 // The raw private-key bytes are extracted from the base64 PEM bodies in
-// test/04-pkey.t lines 163-171 by stripping the PKCS#8 ASN.1 wrapper.
+// test/04-pkey.t lines 168-176 by stripping the PKCS#8 ASN.1 wrapper.
 // The PKCS#8 structure for 32-byte GOST2001 keys is:
 //
 //	30 43 02 01 00 30 1c [OID] 30 12 [OID] [OID] 04 22 02 20 [32-byte key]
@@ -85,17 +87,17 @@ func TestGost_VKO2001_EngineVectors(t *testing.T) {
 //
 //	-pkeyopt ukmhex:0100000000000000
 //
-// Expected: sha256 of derived key = dc0e3c93... (test/04-pkey.t:171)
+// Expected: sha256 of derived key = dc0e3c93... (test/04-pkey.t:176)
 // We cannot directly compare the VKO output against this because it is a sha256
 // of the derived key (not the derived key itself). Skipped.
 //
-// src: tmp/engine/test/04-pkey.t:162-171
+// src: tmp/engine/test/04-pkey.t:167-176
 func TestGost_VKO2001_TestParamSet_RFC(t *testing.T) {
 	t.Parallel()
 
-	t.Skip("tmp/engine/test/04-pkey.t:162 — expected value is sha256 of derived key, not raw derived " +
+	t.Skip("tmp/engine/test/04-pkey.t:167 — expected value is sha256 of derived key, not raw derived " +
 		"key; cannot assert against VKO2001 output without running OpenSSL to compute the raw " +
-		"key first. (src: test/04-pkey.t:171)")
+		"key first. (src: test/04-pkey.t:176)")
 }
 
 // TestGost_R342001_Verify_RFC7091 provides a portable R 34.10-2001 sign+verify

@@ -1,11 +1,12 @@
 package gostcryptocompat_test
 
-// Cipher and MAC vectors ported from gost-engine v3.0.3.
-// Source commit: e0a500a (tag v3.0.3). Not committed; lives in tmp/engine/.
+// Cipher and MAC vectors ported from gost-engine v3.0.5.
+// Source commit: 09fdd53 (tag v3.0.5). Not committed; lives in tmp/engine/.
 //
 // Sources used:
-//   tmp/engine/test/02-mac.t   — GOST 28147-89 IMIT MAC vectors
-//   tmp/engine/test/03-encrypt.t — GOST 28147-89 CNT stream cipher vectors
+//   tmp/engine/test/02-mac.t      — GOST 28147-89 IMIT MAC vectors
+//   tmp/engine/tcl_tests/mac.try  — GOST 28147-89 IMIT MAC vectors (gost-mac, gost-mac-12)
+//   tmp/engine/test/03-encrypt.t  — GOST 28147-89 CNT stream cipher vectors
 
 import (
 	"bytes"
@@ -18,7 +19,7 @@ import (
 )
 
 // TestGost_GOST28147_CNT_EngineVectors tests GOST 28147-89 CNT mode against
-// vectors from gost-engine v3.0.3 test/03-encrypt.t.
+// vectors from gost-engine v3.0.5 test/03-encrypt.t.
 //
 // The engine's gost89-cnt uses the CryptoPro-A S-box (SboxDefault).
 // The engine's gost89-cnt-12 uses the tc26-Z S-box (2012 paramset).
@@ -127,7 +128,7 @@ func TestGost_GOST28147_CNT_EngineVectors(t *testing.T) {
 }
 
 // TestGost_GOST28147_IMIT_EngineVectors tests GOST 28147-89 IMIT (CBC-MAC) against
-// vectors from gost-engine v3.0.3 test/02-mac.t.
+// vectors from gost-engine v3.0.5 test/02-mac.t.
 //
 // Key encoding: in 02-mac.t the key is "$key='0123456789abcdef' x 2" passed as
 // -macopt key:$key, i.e. 32 raw ASCII bytes (not hex).
@@ -371,7 +372,7 @@ func TestGost_GOST28147_IMIT_EngineVectors(t *testing.T) {
 }
 
 // TestGost_GOST28147_IMIT_Wrapper_KeyMeshing validates our GOST28147_IMIT
-// wrapper against the testbig.dat vector from gost-engine v3.0.3 test/02-mac.t.
+// wrapper against the testbig.dat vector from gost-engine v3.0.5 test/02-mac.t.
 // The wrapper implements CryptoPro key meshing (RFC 4357 §2.3.2), which gogost's
 // raw gost28147.MAC omits. Input exceeds 1024 bytes so meshing is exercised.
 // src: tmp/engine/test/02-mac.t:181-187
@@ -421,5 +422,191 @@ func TestGost_GOST28147_IMIT_Wrapper_NoMeshing(t *testing.T) {
 	if !bytes.Equal(got, want) {
 		t.Fatalf("IMIT (no meshing) mismatch:\ngot  %x\nwant %x\n(src: test/02-mac.t:162)",
 			got, want)
+	}
+}
+
+// macTryKey is the key of the gost-mac vectors in tcl_tests/mac.try:
+// -macopt key:12345678901234567890123456789012, 32 raw ASCII bytes. The
+// hexkey:3132...3132 test at mac.try:65-67 passes the same 32 bytes.
+var macTryKey = []byte("12345678901234567890123456789012")
+
+// macTryDgst8 is dgst8.dat of tcl_tests/mac.try:28: "1\n" x 4, 8 bytes.
+var macTryDgst8 = []byte(strings.Repeat("1\n", 4))
+
+// TestGost_GOST28147_IMIT_Wrapper_MacTry validates the GOST28147_IMIT wrapper
+// (CryptoPro-A S-box, 4-byte tag) against the gost-mac vectors of gost-engine
+// v3.0.5 tcl_tests/mac.try. dgst.dat is 2100 bytes, so it crosses two CryptoPro
+// key-meshing boundaries; dgst2.dat and dgst8.dat are short messages, which the
+// engine finalizes with a trailing all-zero block; dgst0.dat is empty.
+//
+// src: tmp/engine/tcl_tests/mac.try:25-28 (data files), 57-79.
+func TestGost_GOST28147_IMIT_Wrapper_MacTry(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		data []byte
+		want string
+		src  string
+	}{
+		{
+			// dgst.dat = "Test data to digest.\n" x 100 (2100 bytes).
+			// mac.try:65-67 (hexkey) expects the same tag.
+			name: "dgst-2100-bytes-meshing",
+			data: []byte(strings.Repeat("Test data to digest.\n", 100)),
+			want: "37f646d2",
+			src:  "tcl_tests/mac.try:58",
+		},
+		{
+			// dgst0.dat = "" (empty file).
+			name: "dgst0-empty",
+			data: nil,
+			want: "00000000",
+			src:  "tcl_tests/mac.try:70",
+		},
+		{
+			// dgst2.dat = "1\n".
+			name: "dgst2-2-bytes",
+			data: []byte("1\n"),
+			want: "87ea321f",
+			src:  "tcl_tests/mac.try:74",
+		},
+		{
+			// dgst8.dat = "1\n" x 4. mac.try:89-91 (gost-mac-12 with
+			// paramset 1.2.643.2.2.31.1, i.e. CryptoPro-A) expects the same tag.
+			name: "dgst8-8-bytes",
+			data: macTryDgst8,
+			want: "ad9aeae0",
+			src:  "tcl_tests/mac.try:78",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			want, err := hex.DecodeString(tc.want)
+			if err != nil {
+				t.Fatalf("hex decode (src: %s): %v", tc.src, err)
+			}
+
+			got, err := gost.GOST28147_IMIT(macTryKey, tc.data)
+			if err != nil {
+				t.Fatalf("GOST28147_IMIT (src: %s): %v", tc.src, err)
+			}
+
+			if !bytes.Equal(got, want) {
+				t.Fatalf("IMIT mismatch (src: %s):\ngot  %x\nwant %s", tc.src, got, tc.want)
+			}
+		})
+	}
+}
+
+// TestGost_GOST28147_IMIT_MacTry_SboxAndSize tests the S-box and tag-size
+// variants of the tcl_tests/mac.try gost-mac vectors on dgst8.dat, which the
+// GOST28147_IMIT wrapper (CryptoPro-A, 4 bytes) does not expose.
+//
+// dgst8.dat is exactly one block, so the engine MACs it followed by an all-zero
+// block (gost_imit_final in gost_crypt.c, the same framing as imitBlocks in
+// primitives_gost.go). gogost's raw MAC does no such finalization, so the test
+// writes both blocks itself. The tag is the leading size bytes of the 8-byte
+// MAC state.
+//
+// src: tmp/engine/tcl_tests/mac.try:81-126.
+func TestGost_GOST28147_IMIT_MacTry_SboxAndSize(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		sbox *gost28147.Sbox
+		size int
+		want string
+		src  string
+	}{
+		{
+			// gost-mac -macopt size:8.
+			name: "cryptopro-a-size8",
+			sbox: gost28147.SboxDefault,
+			size: 8,
+			want: "ad9aeae05a7f6f71",
+			src:  "tcl_tests/mac.try:102",
+		},
+		{
+			// gost-mac -sigopt size:3.
+			name: "cryptopro-a-size3",
+			sbox: gost28147.SboxDefault,
+			size: 3,
+			want: "ad9aea",
+			src:  "tcl_tests/mac.try:117",
+		},
+		{
+			// gost-mac -macopt size:2, new in v3.0.5.
+			name: "cryptopro-a-size2",
+			sbox: gost28147.SboxDefault,
+			size: 2,
+			want: "ad9a",
+			src:  "tcl_tests/mac.try:112",
+		},
+		{
+			// gost-mac-12; mac.try:85-87 (gost-mac with paramset
+			// id-tc26-gost-28147-param-Z) expects the same tag.
+			name: "tc26-z-size4",
+			sbox: &gost28147.SboxIdtc26gost28147paramZ,
+			size: 4,
+			want: "be70ba5e",
+			src:  "tcl_tests/mac.try:82",
+		},
+		{
+			// gost-mac-12 -macopt size:6; mac.try:120-126 (-sigopt size:6)
+			// expect the same tag.
+			name: "tc26-z-size6",
+			sbox: &gost28147.SboxIdtc26gost28147paramZ,
+			size: 6,
+			want: "be70ba5ed6b0",
+			src:  "tcl_tests/mac.try:107",
+		},
+		{
+			// gost-mac with paramset 1.2.643.2.2.31.2 (CryptoPro-B);
+			// mac.try:97-99 (gost-mac-12 with the same paramset by name)
+			// expects the same tag.
+			name: "cryptopro-b-size4",
+			sbox: &gost28147.SboxIdGost2814789CryptoProBParamSet,
+			size: 4,
+			want: "c7fdc644",
+			src:  "tcl_tests/mac.try:95",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			want, err := hex.DecodeString(tc.want)
+			if err != nil {
+				t.Fatalf("hex decode (src: %s): %v", tc.src, err)
+			}
+
+			c := gost28147.NewCipher(macTryKey, tc.sbox)
+
+			mac, err := c.NewMAC(tc.size, make([]byte, gost28147.BlockSize))
+			if err != nil {
+				t.Fatalf("NewMAC: %v", err)
+			}
+
+			// The data block, then the trailing all-zero block.
+			if _, err := mac.Write(macTryDgst8); err != nil {
+				t.Fatalf("Write: %v", err)
+			}
+
+			if _, err := mac.Write(make([]byte, gost28147.BlockSize)); err != nil {
+				t.Fatalf("Write: %v", err)
+			}
+
+			got := mac.Sum(nil)
+
+			if !bytes.Equal(got, want) {
+				t.Fatalf("IMIT mismatch (src: %s):\ngot  %x\nwant %s", tc.src, got, tc.want)
+			}
+		})
 	}
 }

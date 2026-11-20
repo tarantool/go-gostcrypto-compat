@@ -16,8 +16,9 @@
 //
 //  1. RFC 7836 Appendix B example 10 (KDF-02 anchor): the 64-byte K1‖K2 vector is
 //     pinned below from the RFC text (gostcrypto/kdftree/rfc/rfc7836.txt lines
-//     1528-1555), and independently confirmed by gost-engine tmp/engine/
-//     test_keyexpimp.c:78-97,164-165 (KAT-1 in the gostcrypto module tests).
+//     1528-1555), and independently confirmed by gost-engine v3.0.5 tmp/engine/
+//     test_tls12additional.c:95-115,183-184 (test_keyexpimp.c:78-97,164-165 in
+//     v3.0.3; KAT-1 in the gostcrypto module tests).
 //  2. RFC 7836 Appendix B example 9 (KDF-02 anchor): the 32-byte single-block
 //     vector is pinned below from rfc7836.txt:1499-1526 and confirmed by raw gogost
 //     KDF.Derive (which is the complete KDF_GOSTR3411_2012_256 at r=1, L=256).
@@ -81,8 +82,9 @@ func TestKDFTree256Conformance(t *testing.T) {
 		{
 			// RFC 7836 Appendix B example 10 (gostcrypto/kdftree/rfc/rfc7836.txt
 			// lines 1528-1555): KDF_TREE_GOSTR3411_2012_256 with R=1, L=512 (64 bytes).
-			// Independently confirmed by gost-engine tmp/engine/test_keyexpimp.c:78-97
-			// (KAT-1 in gostcrypto/kdftree/kdftree_test.go:TestKDFTree256_KAT1_64B).
+			// Independently confirmed by gost-engine v3.0.5
+			// tmp/engine/test_tls12additional.c:95-115 (test_keyexpimp.c:78-97 in v3.0.3;
+			// KAT-1 in gostcrypto/kdftree/kdftree_test.go:TestKDFTree256_KAT1_64B).
 			// K1 = 22b6837845c6bef65ea71672b265831086d3c76aebe6dae91cad51d83f79d16b
 			// K2 = 074c9330599d7f8d712fca54392f4ddde93751206b3584c8f43f9e6dc51531f9.
 			name:      "KAT-1/64B",

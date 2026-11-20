@@ -1,7 +1,7 @@
 package gostcryptocompat_test
 
-// Test vectors ported from gost-engine v3.0.3
-// https://github.com/gost-engine/engine @ tag v3.0.3
+// Test vectors ported from gost-engine v3.0.5
+// https://github.com/gost-engine/engine @ tag v3.0.5
 //
 // Source files:
 //   tmp/engine/test/01-digest.t        — Perl test file, inline vectors
@@ -23,16 +23,16 @@ import (
 )
 
 // TestGost_Streebog256_EngineVectors tests Streebog-256 against vectors from
-// gost-engine v3.0.3 test/01-digest.t and tcl_tests/dgst.try.
+// gost-engine v3.0.5 test/01-digest.t and tcl_tests/dgst.try.
 //
 // All inputs are exactly reproduced from the Perl/Tcl test setup code.
 // Source: tmp/engine/test/01-digest.t lines 101-108, 125-130, 145-163, 176-195, 207-225, 237-264
-// Source: tmp/engine/tcl_tests/dgst.try lines 31-53.
+// Source: tmp/engine/tcl_tests/dgst.try lines 36-58.
 func TestGost_Streebog256_EngineVectors(t *testing.T) {
 	t.Parallel()
 
-	// Vectors ported from gost-engine v3.0.3 test/01-digest.t
-	// (https://github.com/gost-engine/engine @ v3.0.3).
+	// Vectors ported from gost-engine v3.0.5 test/01-digest.t
+	// (https://github.com/gost-engine/engine @ v3.0.5).
 	cases := []struct {
 		name     string
 		inputHx  string // hex-encoded input (empty = use inputStr).
@@ -43,7 +43,7 @@ func TestGost_Streebog256_EngineVectors(t *testing.T) {
 	}{
 		{
 			// open $F,">","testm1.dat"; print $F "012345678901234567890123456789012345678901234567890123456789012"
-			// Perl test/01-digest.t:101-108 and tcl_tests/dgst.try:31-33.
+			// Perl test/01-digest.t:101-108 and tcl_tests/dgst.try:36-38.
 			name:     "example-1-from-standard-63bytes",
 			inputStr: "012345678901234567890123456789012345678901234567890123456789012",
 			expect:   "9d151eefd8590b89daa6ba6cb74af9275dd051026bb149a452fd84e5e57b5500",
@@ -52,7 +52,7 @@ func TestGost_Streebog256_EngineVectors(t *testing.T) {
 		},
 		{
 			// print $F pack("H*","d1e520e2...")
-			// Perl test/01-digest.t:124-130 and tcl_tests/dgst.try:51-53.
+			// Perl test/01-digest.t:124-130 and tcl_tests/dgst.try:56-58.
 			name: "example-2-from-standard-72bytes",
 			inputHx: "d1e520e2e5f2f0e82c20d1f2f0e8e1eee6e820e2edf3f6e82c20e2e5fef2fa20" +
 				"f120eceef0ff20f1f2f0e5ebe0ece820ede020f5f0e0e1f0fbff20efebfaeafb" +
@@ -99,18 +99,18 @@ func TestGost_Streebog256_EngineVectors(t *testing.T) {
 		},
 		{
 			// dgst0.dat = "" (empty file)
-			// tcl_tests/dgst.try:39-41.
+			// tcl_tests/dgst.try:44-46.
 			name:     "empty",
 			inputStr: "",
 			expect:   "3f539a213e97c802cc229d474c6aa32a825a360b2a933a949fd925208d9ce1bb",
 			srcFile:  "tcl_tests/dgst.try",
-			srcLine:  40,
+			srcLine:  45,
 		},
 		{
 			// dgst_CF.dat: 64 bytes 0xEE, then 0x16, then 62 bytes 0x11, then 0x16
 			// (128 bytes total, special carry-propagation test vector).
 			// Verified against etalon/carry (wc -c=128) and etalon/dgst.result line 16.
-			// tcl_tests/dgst.try:43-45 and etalon/dgst.result.
+			// tcl_tests/dgst.try:48-50 and etalon/dgst.result.
 			name: "special-CF-128bytes",
 			inputHx: "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" +
 				"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" +
@@ -118,7 +118,7 @@ func TestGost_Streebog256_EngineVectors(t *testing.T) {
 				"1111111111111111111111111111111111111111111111111111111111111116",
 			expect:  "81bb632fa31fcc38b4c379a662dbc58b9bed83f50d3a1b2ce7271ab02d25babb",
 			srcFile: "tcl_tests/dgst.try",
-			srcLine: 44,
+			srcLine: 49,
 		},
 	}
 
@@ -155,10 +155,10 @@ func TestGost_Streebog256_EngineVectors(t *testing.T) {
 }
 
 // TestGost_Streebog512_EngineVectors tests Streebog-512 against vectors from
-// gost-engine v3.0.3 test/01-digest.t and tcl_tests/dgst.try.
+// gost-engine v3.0.5 test/01-digest.t and tcl_tests/dgst.try.
 //
 // Source: tmp/engine/test/01-digest.t lines 112-118, 133-140, 165-171, 196-203, 228-234, 258-265
-// Source: tmp/engine/tcl_tests/dgst.try lines 55-77.
+// Source: tmp/engine/tcl_tests/dgst.try lines 60-82.
 func TestGost_Streebog512_EngineVectors(t *testing.T) {
 	t.Parallel()
 
@@ -172,7 +172,7 @@ func TestGost_Streebog512_EngineVectors(t *testing.T) {
 	}{
 		{
 			// testm1.dat = "012345678901234567890123456789012345678901234567890123456789012" (63 bytes)
-			// test/01-digest.t:112-118 and tcl_tests/dgst.try:55-57.
+			// test/01-digest.t:112-118 and tcl_tests/dgst.try:60-62.
 			name:     "example-1-from-standard-63bytes",
 			inputStr: "012345678901234567890123456789012345678901234567890123456789012",
 			expect: "1b54d01a4af5b9d5cc3d86d68d285462b19abc2475222f35c085122be4ba1ffa" +
@@ -182,7 +182,7 @@ func TestGost_Streebog512_EngineVectors(t *testing.T) {
 		},
 		{
 			// testm2.dat = pack("H*","d1e520e2...")
-			// test/01-digest.t:133-140 and tcl_tests/dgst.try:75-77.
+			// test/01-digest.t:133-140 and tcl_tests/dgst.try:80-82.
 			name: "example-2-from-standard-72bytes",
 			inputHx: "d1e520e2e5f2f0e82c20d1f2f0e8e1eee6e820e2edf3f6e82c20e2e5fef2fa20" +
 				"f120eceef0ff20f1f2f0e5ebe0ece820ede020f5f0e0e1f0fbff20efebfaeafb" +
@@ -234,19 +234,19 @@ func TestGost_Streebog512_EngineVectors(t *testing.T) {
 		},
 		{
 			// dgst0.dat = "" (empty file)
-			// tcl_tests/dgst.try:63-65.
+			// tcl_tests/dgst.try:68-70.
 			name:     "empty",
 			inputStr: "",
 			expect: "8e945da209aa869f0455928529bcae4679e9873ab707b55315f56ceb98bef0a7" +
 				"362f715528356ee83cda5f2aac4c6ad2ba3a715c1bcd81cb8e9f90bf4c1c1a8a",
 			srcFile: "tcl_tests/dgst.try",
-			srcLine: 64,
+			srcLine: 69,
 		},
 		{
 			// dgst_CF.dat (carry test vector)
 			// Same 128-byte input as Streebog-256 carry vector above.
 			// Verified against etalon/carry and etalon/dgst.result line 8.
-			// tcl_tests/dgst.try:67-69 and etalon/dgst.result.
+			// tcl_tests/dgst.try:72-74 and etalon/dgst.result.
 			name: "special-CF-128bytes",
 			inputHx: "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" +
 				"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" +
@@ -255,7 +255,7 @@ func TestGost_Streebog512_EngineVectors(t *testing.T) {
 			expect: "8b06f41e59907d9636e892caf5942fcdfb71fa31169a5e70f0edb873664df41c" +
 				"2cce6e06dc6755d15a61cdeb92bd607cc4aaca6732bf3568a23a210dd520fd41",
 			srcFile: "tcl_tests/dgst.try",
-			srcLine: 68,
+			srcLine: 73,
 		},
 	}
 
@@ -292,13 +292,13 @@ func TestGost_Streebog512_EngineVectors(t *testing.T) {
 }
 
 // TestGost_GOSTR341194_EngineVectors tests GOST R 34.11-94 against vectors from
-// gost-engine v3.0.3 test/01-digest.t and tcl_tests/dgst.try.
+// gost-engine v3.0.5 test/01-digest.t and tcl_tests/dgst.try.
 //
 // The gost-engine uses GOST R 34.11-94 with the CryptoPro parameter set
 // (SboxIdGostR341194CryptoProParamSet), which is what our GOSTR341194 function uses.
 //
 // Source: tmp/engine/test/01-digest.t lines 145-155, 180-187, 209-217, 241-249
-// Source: tmp/engine/tcl_tests/dgst.try lines 79-89.
+// Source: tmp/engine/tcl_tests/dgst.try lines 84-94.
 func TestGost_GOSTR341194_EngineVectors(t *testing.T) {
 	t.Parallel()
 
@@ -312,7 +312,7 @@ func TestGost_GOSTR341194_EngineVectors(t *testing.T) {
 	}{
 		{
 			// testdata.dat = "12345670" x 128 (1024 bytes ASCII)
-			// test/01-digest.t:145-155 and tcl_tests/dgst.try:79-81.
+			// test/01-digest.t:145-155 and tcl_tests/dgst.try:84-86.
 			name:     "1K-ascii-repeated",
 			inputStr: strings.Repeat("12345670", 128),
 			expect:   "f7fc6d16a6a5c12ac4f7d320e0fd0d8354908699125e09727a4ef929122b1cae",
@@ -348,15 +348,15 @@ func TestGost_GOSTR341194_EngineVectors(t *testing.T) {
 		},
 		{
 			// dgst.dat = "Test data to digest.\n" x 100 (2100 bytes)
-			// tcl_tests/dgst.try:79-81 (different file)
+			// tcl_tests/dgst.try:84-86 (different file)
 			// Note: dgst.try uses dgst.dat for the primary 94 test.
 			name:     "2100-bytes-ascii-teststyle",
 			inputStr: strings.Repeat("Test data to digest.\n", 100),
 			expect:   "42e462ce1c2b4bf72a4815b7b4877c601f05e5781a71eaa36f63f836c021865c",
 			srcFile:  "tcl_tests/dgst.try",
-			srcLine:  81,
+			srcLine:  86,
 		},
-		// dgst0.dat = "" (empty file), tcl_tests/dgst.try:87-89
+		// dgst0.dat = "" (empty file), tcl_tests/dgst.try:92-94
 		// DISAGREEMENT: engine expects 3f25bc1f..., gogost produces 981e5f3c...
 		// Cause: gogost and gost-engine diverge in EMPTY-INPUT finalization.
 		// Engine's finish_hash runs one extra hash_step(H, zero_block) when
@@ -400,16 +400,16 @@ func TestGost_GOSTR341194_EngineVectors(t *testing.T) {
 }
 
 // TestGost_HMACStreebog512_EngineVectors tests HMAC-Streebog-512 against the
-// vector from gost-engine v3.0.3 tcl_tests/mac.try.
+// vector from gost-engine v3.0.5 tcl_tests/mac.try.
 //
-// Source: tmp/engine/tcl_tests/mac.try lines 16-18.
+// Source: tmp/engine/tcl_tests/mac.try lines 33-35.
 func TestGost_HMACStreebog512_EngineVectors(t *testing.T) {
 	t.Parallel()
 
 	// dgst63.dat = "012345678901234567890123456789012345678901234567890123456789012" (63 bytes)
 	// HMAC key = "123456901234567890123456789012" (30 ASCII bytes)
 	// Expected HMAC-md_gost12_512 = 3767bcbe31de0965...
-	// mac.try:16-18.
+	// mac.try:33-35.
 	input := []byte("012345678901234567890123456789012345678901234567890123456789012")
 	key := []byte("123456901234567890123456789012")
 
@@ -426,22 +426,22 @@ func TestGost_HMACStreebog512_EngineVectors(t *testing.T) {
 	got := h.Sum(nil)
 
 	if !bytes.Equal(got, want) {
-		t.Errorf("HMAC-Streebog512 mismatch:\ngot  %x\nwant %x\n(src: tcl_tests/mac.try:18)",
+		t.Errorf("HMAC-Streebog512 mismatch:\ngot  %x\nwant %x\n(src: tcl_tests/mac.try:35)",
 			got, want)
 	}
 }
 
 // TestGost_HMACGOSTR341194_EngineVectors tests HMAC-GOST R 34.11-94 against the
-// vector from gost-engine v3.0.3 tcl_tests/mac.try.
+// vector from gost-engine v3.0.5 tcl_tests/mac.try.
 //
-// Source: tmp/engine/tcl_tests/mac.try lines 24-26.
+// Source: tmp/engine/tcl_tests/mac.try lines 41-43.
 func TestGost_HMACGOSTR341194_EngineVectors(t *testing.T) {
 	t.Parallel()
 
 	// dgst.dat = "Test data to digest.\n" x 100 (2100 bytes)
 	// HMAC key = "123456901234567890123456789012" (30 ASCII bytes)
 	// Expected HMAC-md_gost94 = 25434aa4b59b9749d3716ac188762b6c92b47d552aeb556f74b9c357b2b7c8c6
-	// mac.try:24-26.
+	// mac.try:41-43.
 	input := []byte(strings.Repeat("Test data to digest.\n", 100))
 	key := []byte("123456901234567890123456789012")
 
@@ -459,7 +459,7 @@ func TestGost_HMACGOSTR341194_EngineVectors(t *testing.T) {
 	got := h.Sum(nil)
 
 	if !bytes.Equal(got, want) {
-		t.Errorf("HMAC-GOSTR341194 mismatch:\ngot  %x\nwant %x\n(src: tcl_tests/mac.try:26)",
+		t.Errorf("HMAC-GOSTR341194 mismatch:\ngot  %x\nwant %x\n(src: tcl_tests/mac.try:43)",
 			got, want)
 	}
 }
