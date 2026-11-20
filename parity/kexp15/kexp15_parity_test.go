@@ -9,7 +9,7 @@
 // block-cipher parity but is weaker on the composition layer, where a bug common
 // to both same-shaped implementations would pass. External correctness for that
 // layer is anchored by independent pinned vectors:
-//   - Magma:      gost-engine 3.0.3 etalon (TestKexp15Conformance below).
+//   - Magma:      gost-engine 3.0.5 etalon (TestKexp15Conformance below).
 //   - Kuznyechik: RFC 9189 Appendix A.1.3.2 (TestKexp15Conformance_Kuznyechik).
 //
 // Only the block ciphers are independently sourced; the OMAC/CTR composition is
@@ -37,8 +37,8 @@ func mustHexF(s string) []byte {
 }
 
 // TestKexp15Conformance asserts both the in-repo oracle and the clean-room
-// impl reproduce the pinned Magma etalon (gost-engine 3.0.3,
-// tmp/engine/test_keyexpimp.c:47-76).
+// impl reproduce the pinned Magma etalon (gost-engine 3.0.5,
+// tmp/engine/test_tls12additional.c:64-93; test_keyexpimp.c:47-76 in 3.0.3).
 func TestKexp15Conformance(t *testing.T) {
 	t.Parallel()
 

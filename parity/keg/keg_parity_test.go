@@ -236,7 +236,7 @@ func TestKEG2012_256_MultiCurve(t *testing.T) {
 
 // zeroUKMWantHex is KEG2012_256(privA, pubB, ukm=32×0x00) on TC26 256-bit
 // ParamSet A. The all-zero first 16 bytes trigger the real_ukm = 00…00 01
-// special case (gost_ec_keyx.c:140-142, tmp/engine/gost_ec_keyx.c).
+// special case (tmp/engine/gost_ec_keyx.c:150-152 in 3.0.5, 140-142 in 3.0.3).
 //
 // Vector source: gost-engine 3.0.3 via:
 //
@@ -248,6 +248,8 @@ func TestKEG2012_256_MultiCurve(t *testing.T) {
 //
 // Keys are privAHex/pubBHex on curve 1.2.643.7.1.2.1.1.1 (TC26 256-A).
 // Pair-symmetry verified: engine B→A with privBHex/pubAHex produces the same 64 bytes.
+// The 3.0.5 code path is refactored but unchanged in output; docs/engine-vectors.md
+// (KEG-03) lists what was compared.
 const zeroUKMWantHex = "1f28179da81185e6019a6bc43568b9d8be3788111c50dff78b2a04259f8ecc73" +
 	"ddc39fe3d635dc2ffd7071286d4d074421307548b847dbb88039b94015382a6e"
 

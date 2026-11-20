@@ -41,7 +41,7 @@ func seedHex(s string) []byte {
 }
 
 // TestEngineVectors_IMIT pins the clean-room IMIT against independent
-// gost-engine v3.0.3 vectors (test/02-mac.t), so this parity package carries
+// gost-engine v3.0.5 vectors (test/02-mac.t), so this parity package carries
 // its own anchor independent of the root-package oracle. These are the same
 // vectors used in the root-package TestGost_GOST28147_IMIT_Wrapper_* tests.
 func TestEngineVectors_IMIT(t *testing.T) {

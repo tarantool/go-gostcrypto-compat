@@ -84,7 +84,8 @@ func TestKEG2012_256_RoundTrip(t *testing.T) {
 }
 
 // TestKEG2012_256_EngineOracle tests KEG output against a value produced by
-// gost-engine 3.0.3 via openssl pkeyutl -derive -engine gost.
+// gost-engine 3.0.3 via openssl pkeyutl -derive -engine gost. The 3.0.5 code
+// path is refactored but unchanged in output (docs/engine-vectors.md, KEG-03).
 //
 // Key material (GOST R 34.10-2012 256-bit, tc26 paramset A):
 //
