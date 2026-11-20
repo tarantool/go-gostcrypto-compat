@@ -8,8 +8,9 @@ require (
 	go.stargrave.org/gogost/v7 v7.0.0
 )
 
-// go-gostcrypto is pinned to its published v0.1.0 and resolves through the
-// public proxy — no replace needed.
+// go-gostcrypto is pinned to a published release and resolves through the
+// public proxy — no replace needed. bump-go-gostcrypto.yml moves the pin; to
+// build against a local go-gostcrypto, use a go.work (see CONTRIBUTING.md).
 //
 // gogost and aead/cmac cannot resolve through the public proxy and are
 // permanently vendored under third_party/, wired in by replace:

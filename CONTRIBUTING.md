@@ -3,16 +3,37 @@
 ## First steps
 
 The project requires Go 1.24 or later. It is a GPL-3.0 module that links the
-gogost reference implementation; a checkout of
-[`go-gostcrypto`](https://github.com/tarantool/go-gostcrypto) as a sibling
-directory is required, because it is wired in by `replace ../go-gostcrypto`.
+gogost reference implementation.
+[`go-gostcrypto`](https://github.com/tarantool/go-gostcrypto) is an ordinary
+dependency: `go.mod` pins a published release that resolves through the public
+Go proxy, so a clone of this repository is all you need.
 
 ```sh
-$ git clone https://github.com/tarantool/go-gostcrypto
 $ git clone https://github.com/tarantool/go-gostcrypto-compat
 $ cd go-gostcrypto-compat
 $ go build ./...
 ```
+
+### Working against a local go-gostcrypto
+
+A change that needs an unreleased `go-gostcrypto`, such as parity tests for a
+`go-gostcrypto` change under review, is built against a local `go-gostcrypto`
+tree. Clone it next to this module and span both in a Go workspace:
+
+```sh
+$ git clone https://github.com/tarantool/go-gostcrypto ../go-gostcrypto
+$ go work init . ../go-gostcrypto
+$ go build ./...
+$ go test ./...
+```
+
+CI does the same: `parity-engine.yml` and `bump-gost-engine.yml` check
+`go-gostcrypto` out next to this module and run `go work init . ../gostcrypto`.
+The workspace overrides the pinned release for every `go` command run in this
+directory; the `replace` directives for the vendored gogost and `aead/cmac`
+still apply. `go.work` and `go.work.sum` are local and ignored by git: never
+commit them. Set `GOWORK=off` to use the pinned release for a single command,
+or delete both files to drop the workspace.
 
 ## The GPL boundary
 

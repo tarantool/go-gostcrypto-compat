@@ -10,3 +10,7 @@ coverage.out
 
 # Reference clone of gost-engine (vectors source of truth, not part of build).
 tmp/
+
+# Local Go workspace over a go-gostcrypto checkout (see CONTRIBUTING.md).
+/go.work
+/go.work.sum
