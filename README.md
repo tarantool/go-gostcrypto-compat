@@ -31,29 +31,45 @@ go-gostcrypto-compat/
 ## Requirements
 
 - Go 1.24 or later.
-- A checkout of [`go-gostcrypto`](https://github.com/tarantool/go-gostcrypto) as
-  a sibling directory (`../go-gostcrypto`) — see below.
 - Linux, macOS, or any other platform the Go toolchain supports; pure-Go, builds
   with `CGO_ENABLED=0`.
 
 ## Quick start
 
-`go-gostcrypto` is co-developed and not yet published, and gogost is not
-resolvable through the stock Go proxy, so both are wired in by `replace`
-directives in `go.mod`:
+`go.mod` pins a published `go-gostcrypto` release, which resolves through the
+public Go proxy, so a clone of this repository is all you need. gogost and the
+test-only `aead/cmac` oracle are not resolvable through the stock Go proxy, so
+both are vendored under `third_party/` and wired in by `replace` directives in
+`go.mod`:
 
 ```
-replace github.com/tarantool/go-gostcrypto => ../go-gostcrypto
-replace go.stargrave.org/gogost/v7        => ./third_party/gogost
+replace go.stargrave.org/gogost/v7 => ./third_party/gogost
+replace github.com/aead/cmac       => ./third_party/cmac
 ```
-
-Check `go-gostcrypto` out as a sibling directory (`../go-gostcrypto`), then:
 
 ```sh
 go build ./...
 go test  ./...      # facade KAT/vector tests + all parity tests
 make test           # same, via the Makefile (see `make help`)
 ```
+
+### Against a local go-gostcrypto
+
+To build and test against a local or unreleased `go-gostcrypto` instead of the
+pinned release (parity tests for a `go-gostcrypto` change that is not released
+yet need this), clone it next to this module and span both in a Go workspace,
+the same thing CI does:
+
+```sh
+git clone https://github.com/tarantool/go-gostcrypto ../go-gostcrypto
+go work init . ../go-gostcrypto
+go test ./...
+```
+
+The workspace overrides the pin for every `go` command run here; the `replace`
+directives above still apply. `go.work` and `go.work.sum` are ignored by git
+and must not be committed. Delete them to go back to the pinned release, or set
+`GOWORK=off` for a single command.
 
 ## Documentation
 

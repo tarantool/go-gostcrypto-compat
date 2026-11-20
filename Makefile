@@ -1,7 +1,7 @@
 # go-gostcrypto-compat — developer tasks.
 #
-# This is the GPL-3 parity module: it diffs the BSD clean-room primitives in
-# ../go-gostcrypto against the gogost reference, byte-for-byte. Every parity
+# This is the GPL-3 parity module: it diffs the BSD clean-room primitives of
+# go-gostcrypto against the gogost reference, byte-for-byte. Every parity
 # package ships a differential Fuzz target; `make fuzz` drives them all.
 #
 # Override any variable on the command line, e.g.:

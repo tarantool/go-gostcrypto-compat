@@ -6,11 +6,12 @@ name: engine
 # them. Without it a broken engine build or matrix would first show up in
 # go-gostcrypto's pull requests, which take all three from compat master.
 #
-# ci.yml skips parity on purpose: against the go-gostcrypto default branch it
-# goes red whenever a go-gostcrypto API change sits on a branch. That still
-# holds here, and is fine: this workflow is path-filtered, so it runs on few
-# changes, and what it tests is the engine plumbing, not the parity of a
-# go-gostcrypto change, which go-gostcrypto's own parity workflow gates.
+# ci.yml does not run parity (see the comment there). This workflow runs it
+# against the go-gostcrypto default branch, so it goes red whenever a
+# go-gostcrypto API change sits on a branch. That is fine: this workflow is
+# path-filtered, so it runs on few changes, and what it tests is the engine
+# plumbing, not the parity of a go-gostcrypto change, which go-gostcrypto's own
+# parity workflow gates.
 #
 # Pull requests opened by bump-gost-engine.yml do not trigger it: events made
 # with GITHUB_TOKEN start no workflows. That job runs the same suite against
